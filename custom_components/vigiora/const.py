@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 from typing import Final
+from urllib.parse import urlsplit
 
 DOMAIN: Final = "vigiora"
 MANUFACTURER: Final = "Data Tamer"
@@ -89,3 +90,21 @@ ATTR_PROMPTS: Final = "prompts"
 ATTR_INCLUDE_OBJECTS: Final = "include_objects"
 ATTR_MIN_CONFIDENCE: Final = "min_confidence"
 ATTR_ALERT_ID: Final = "alert_id"
+
+
+def server_name(url: str) -> str:
+    """A display name from the URL: <site> of <site>.vigiora.com, else the host.
+
+    The fallback when the server's own name (GET /api/v1/server) is not readable.
+    """
+    host = urlsplit(url).hostname or url
+    if host.endswith(".vigiora.com"):
+        labels = host.removesuffix(".vigiora.com").split(".")
+        # lan.<site>.vigiora.com is the site's LAN address.
+        return labels[-1]
+    return host
+
+
+def default_title(name: str) -> str:
+    """The config entry's title for a server name."""
+    return f"Vigiora {name}"

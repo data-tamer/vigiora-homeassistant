@@ -57,9 +57,9 @@ async def test_things_entities(
     assert hass.states.get("binary_sensor.entrance_person_in_view").state == STATE_OFF
     assert hass.states.get("binary_sensor.entrance_online").state == STATE_ON
     assert hass.states.get("binary_sensor.garden_online").state == STATE_OFF
-    assert hass.states.get("sensor.vigiora_site_unacknowledged_alerts").state == "746"
-    assert hass.states.get("sensor.vigiora_site_shop_occupancy").state == "3"
-    assert hass.states.get("sensor.vigiora_site_shop_visitors_today").state == "42"
+    assert hass.states.get("sensor.vigiora_base01_unacknowledged_alerts").state == "746"
+    assert hass.states.get("sensor.vigiora_base01_shop_occupancy").state == "3"
+    assert hass.states.get("sensor.vigiora_base01_shop_visitors_today").state == "42"
     # Read-only key: no switches or selects.
     assert hass.states.get("switch.entrance_recording") is None
 
@@ -360,3 +360,87 @@ async def test_diagnostics_things(
     assert diag["things_mode"] is True
     assert "camera:1" in diag["things"]
     assert "things" in diag["server"]["features"]
+
+
+async def test_default_title_takes_server_name(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, config_entry: MockConfigEntry
+) -> None:
+    """An entry still titled from its URL is renamed to the server's own name."""
+    add_api(aioclient_mock, things=True)
+    assert config_entry.title == "Vigiora site"  # the default 0.1.0 gave this URL
+    await _setup(hass, config_entry)
+    assert config_entry.title == "Vigiora base01"
+    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, config_entry.entry_id)})
+    assert device.name == "Vigiora base01"
+
+
+def _entry(title: str) -> MockConfigEntry:
+    from custom_components.vigiora.const import CONF_API_KEY, CONF_URL, CONF_VERIFY_SSL
+
+    from .conftest import API_KEY
+
+    return MockConfigEntry(
+        domain=DOMAIN,
+        title=title,
+        unique_id=URL,
+        data={CONF_URL: URL, CONF_API_KEY: API_KEY, CONF_VERIFY_SSL: True},
+    )
+
+
+async def test_host_default_title_takes_server_name(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A "Vigiora <host>" title (e.g. "Vigiora 127.0.0.1") gets the server's name too."""
+    add_api(aioclient_mock, things=True)
+    entry = _entry("Vigiora site.vigiora.com")
+    await _setup(hass, entry)
+    assert entry.title == "Vigiora base01"
+
+
+async def test_custom_title_is_kept(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A title the person chose is never overwritten."""
+    add_api(aioclient_mock, things=True)
+    entry = _entry("My cameras")
+    await _setup(hass, entry)
+    assert entry.title == "My cameras"
+
+
+async def test_old_server_keeps_title(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, config_entry: MockConfigEntry
+) -> None:
+    """Without GET /server (API < 1.17) the URL-derived title stays."""
+    add_api(aioclient_mock)
+    await _setup(hass, config_entry)
+    assert config_entry.title == "Vigiora site"
+
+
+async def test_child_devices_link_to_registered_server_device(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, config_entry: MockConfigEntry
+) -> None:
+    """Camera and room devices hang off the server device registered first."""
+    add_api(aioclient_mock, things=True, scopes=WRITE_SCOPES)
+    await _setup(hass, config_entry)
+    reg = dr.async_get(hass)
+    server = reg.async_get_device(identifiers={(DOMAIN, config_entry.entry_id)})
+    assert config_entry.runtime_data.server_device_id == server.id
+    for suffix in ("camera_1", "room_7"):
+        child = reg.async_get_device(identifiers={(DOMAIN, f"{config_entry.entry_id}_{suffix}")})
+        assert child is not None, suffix
+        assert child.via_device_id == server.id
+
+
+def test_via_server_uses_device_id_when_supported(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Newer Home Assistant gets via_device_id (no deprecated via_device)."""
+    from types import SimpleNamespace
+
+    from custom_components.vigiora import entity
+
+    entry = SimpleNamespace(entry_id="e1", runtime_data=SimpleNamespace(server_device_id="dev1"))
+    monkeypatch.setattr(entity, "VIA_DEVICE_ID_SUPPORTED", True)
+    assert entity.via_server(entry) == {"via_device_id": "dev1"}
+    entry.runtime_data.server_device_id = None
+    assert entity.via_server(entry) == {}
+    monkeypatch.setattr(entity, "VIA_DEVICE_ID_SUPPORTED", False)
+    assert entity.via_server(entry) == {"via_device": (DOMAIN, "e1")}

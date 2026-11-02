@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import logging
+from urllib.parse import urlsplit
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -18,7 +19,7 @@ from .api import (
     VigioraClient,
     VigioraError,
 )
-from .const import CONF_API_KEY, CONF_URL, CONF_VERIFY_SSL, DOMAIN
+from .const import CONF_API_KEY, CONF_URL, CONF_VERIFY_SSL, DOMAIN, default_title, server_name
 from .coordinator import (
     Capabilities,
     VigioraCoordinator,
@@ -60,6 +61,9 @@ class VigioraRuntime:
     version: str | None
     things: ThingsClient
     server: ServerInfo | None = None
+    # Device registry id of the server device: the parent (via_device_id) of the
+    # camera and room devices.
+    server_device_id: str | None = None
 
 
 type VigioraConfigEntry = ConfigEntry[VigioraRuntime]
@@ -144,15 +148,36 @@ async def async_setup_entry(hass: HomeAssistant, entry: VigioraConfigEntry) -> b
         server=caps.server,
     )
 
+    _async_update_default_title(hass, entry, caps.server)
+
     # The server device first: camera and room devices hang off it.
-    dr.async_get(hass).async_get_or_create(
+    server_device = dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id, **server_device_info(entry)
     )
+    entry.runtime_data.server_device_id = server_device.id
     _async_remove_stale_devices(hass, entry, coordinator)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     events.start()
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
+
+
+def _async_update_default_title(
+    hass: HomeAssistant, entry: VigioraConfigEntry, server: ServerInfo | None
+) -> None:
+    """Title the entry with the server's own name (GET /api/v1/server).
+
+    Only an entry still carrying a default title ("Vigiora <host>", or the site label
+    0.1.0 derived from the URL) is renamed; a title the person chose is kept.
+    """
+    if server is None or not server.name:
+        return
+    url = entry.data[CONF_URL]
+    host = urlsplit(url).hostname or url
+    defaults = {default_title(host), default_title(server_name(url))}
+    wanted = default_title(server.name)
+    if entry.title in defaults and entry.title != wanted:
+        hass.config_entries.async_update_entry(entry, title=wanted)
 
 
 def _async_remove_stale_devices(

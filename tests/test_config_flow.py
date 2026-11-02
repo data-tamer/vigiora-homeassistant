@@ -44,6 +44,20 @@ async def test_user_success(hass: HomeAssistant, aioclient_mock: AiohttpClientMo
     assert result["result"].unique_id == URL
 
 
+async def test_user_title_from_server_name(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """On API 1.17+ the title is the server's own name (GET /api/v1/server)."""
+    add_api(aioclient_mock, things=True)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Vigiora base01"
+    assert result["description_placeholders"] == {"name": "base01", "version": "1.7.0"}
+
+
 async def test_user_bad_key(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) -> None:
     """401 shows invalid_auth."""
     add_api(aioclient_mock, me_status=HTTPStatus.UNAUTHORIZED)

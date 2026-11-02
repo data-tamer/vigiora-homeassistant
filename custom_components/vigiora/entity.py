@@ -20,6 +20,20 @@ if TYPE_CHECKING:
     from . import VigioraConfigEntry
 
 
+# Newer Home Assistant versions (seen on 2026.10) take the parent as a device registry id
+# (`via_device_id`) and deprecate the identifier tuple (`via_device`, removed in 2027.8.0);
+# older versions only know `via_device`.
+VIA_DEVICE_ID_SUPPORTED = "via_device_id" in DeviceInfo.__annotations__
+
+
+def via_server(entry: VigioraConfigEntry) -> dict[str, Any]:
+    """The DeviceInfo fields linking a device to the (registered) server device."""
+    if VIA_DEVICE_ID_SUPPORTED:
+        device_id = getattr(entry.runtime_data, "server_device_id", None)
+        return {"via_device_id": device_id} if device_id else {}
+    return {"via_device": (DOMAIN, entry.entry_id)}
+
+
 def server_device_info(entry: VigioraConfigEntry) -> DeviceInfo:
     """The Vigiora server device."""
     runtime = entry.runtime_data
@@ -49,8 +63,8 @@ def camera_device_info(
         name=camera.get("name") or f"Camera {camera_id}",
         manufacturer=MANUFACTURER,
         model="Camera",
-        via_device=(DOMAIN, entry.entry_id),
         configuration_url=entry.runtime_data.client.url,
+        **via_server(entry),
     )
 
 
@@ -175,7 +189,7 @@ def thing_device_info(entry: VigioraConfigEntry, thing: Thing | None) -> DeviceI
         name=thing.name or f"Room {thing.object_id}",
         manufacturer=MANUFACTURER,
         model="Room",
-        via_device=(DOMAIN, entry.entry_id),
+        **via_server(entry),
     )
 
 

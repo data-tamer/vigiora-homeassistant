@@ -14,7 +14,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 import logging
 from typing import Any
-from urllib.parse import urlsplit
 
 import voluptuous as vol
 
@@ -48,6 +47,8 @@ from .const import (
     DEFAULT_EVENT_TYPES,
     DOMAIN,
     EVENT_TYPES,
+    default_title,
+    server_name,
 )
 from .vigiora_things import AiohttpTransport, ThingsClient, ThingsError
 
@@ -77,16 +78,6 @@ class InvalidUrl(Exception):
 
 class MissingScope(Exception):
     """The key lacks cameras:read."""
-
-
-def server_name(url: str) -> str:
-    """A display name for the server: <site> of <site>.vigiora.com, else the host."""
-    host = urlsplit(url).hostname or url
-    if host.endswith(".vigiora.com"):
-        labels = host.removesuffix(".vigiora.com").split(".")
-        # lan.<site>.vigiora.com is the site's LAN address.
-        return labels[-1]
-    return host
 
 
 async def validate_input(
@@ -178,7 +169,7 @@ class VigioraConfigFlow(ConfigFlow, domain=DOMAIN):
                         updates={CONF_API_KEY: api_key, CONF_VERIFY_SSL: verify}
                     )
                     return self.async_create_entry(
-                        title=f"Vigiora {info['name']}",
+                        title=default_title(info["name"]),
                         data={CONF_URL: url, CONF_API_KEY: api_key, CONF_VERIFY_SSL: verify},
                         description_placeholders={
                             "name": info["name"],

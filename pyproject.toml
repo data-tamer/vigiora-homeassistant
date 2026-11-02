@@ -1,6 +1,6 @@
 [project]
 name = "vigiora-homeassistant"
-version = "0.2.0"
+version = "0.2.1"
 description = "Vigiora integration for Home Assistant"
 requires-python = ">=3.13"
 license = "Apache-2.0"

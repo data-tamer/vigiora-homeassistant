@@ -11,7 +11,7 @@ behaviour (feature detection via `GET /api/v1/server`). Live updates come from t
 (Server-Sent Events) with automatic reconnect and backoff; if the stream is down, it falls back to polling
 every 60 seconds.
 
-Status: 0.2.0, private preview.
+Status: 0.2.1, private preview.
 
 ## Install (HACS custom repository)
 

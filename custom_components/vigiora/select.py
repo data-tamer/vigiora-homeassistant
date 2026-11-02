@@ -15,7 +15,7 @@ from . import VigioraConfigEntry, things_map
 from .api import VigioraError
 from .const import DOMAIN, MANUFACTURER, ROOM_AI_MODES
 from .coordinator import VigioraCoordinator
-from .entity import VigioraThingEntity, thing_allowed
+from .entity import VigioraThingEntity, thing_allowed, via_server
 from .errors import to_ha_error
 from .vigiora_things import plan
 
@@ -64,7 +64,7 @@ class VigioraRoomAIMode(CoordinatorEntity[VigioraCoordinator], SelectEntity):
             name=room.get("name") or f"Room {room_id}",
             manufacturer=MANUFACTURER,
             model="Room",
-            via_device=(DOMAIN, entry.entry_id),
+            **via_server(entry),
         )
 
     @property
