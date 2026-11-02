@@ -32,6 +32,7 @@ OP_DISABLE_AI = "disableCameraAI"
 OP_MOVE_PTZ = "movePTZ"
 OP_GOTO_PRESET = "gotoPTZPreset"
 OP_SPEAK = "speakInRoom"
+OP_SPEAK_CAMERA = "speakOnCamera"
 OP_UPDATE_ROOM = "updateRoom"
 
 
@@ -289,6 +290,30 @@ class VigioraClient:
             params = {**params, "cursor": cursor}
         return total, True
 
+    async def get_alert_summary(self) -> dict[str, Any]:
+        """GET /api/v1/alerts/summary (alerts:read; API 1.17.0)."""
+        return await self.request("GET", "/api/v1/alerts/summary")
+
+    async def stream_url(self, camera_id: int, ttl_seconds: int = 600) -> dict[str, Any]:
+        """POST /api/v1/cameras/{id}/actions/stream-url (cameras:read; API 1.17.0).
+
+        A signed, short-lived HLS link (hls_url relative to the server) and its
+        expires_at. The key is not in the link.
+        """
+        return await self.request(
+            "POST",
+            f"/api/v1/cameras/{camera_id}/actions/stream-url",
+            json_body={"ttl_seconds": ttl_seconds},
+        )
+
+    async def snapshot_url(self, camera_id: int, ttl_seconds: int = 600) -> dict[str, Any]:
+        """POST /api/v1/cameras/{id}/actions/snapshot-url (cameras:read; API 1.17.0)."""
+        return await self.request(
+            "POST",
+            f"/api/v1/cameras/{camera_id}/actions/snapshot-url",
+            json_body={"ttl_seconds": ttl_seconds},
+        )
+
     async def list_alerts(self, **params: Any) -> list[dict[str, Any]]:
         """GET /api/v1/alerts, one page (alerts:read)."""
         page = await self.request("GET", "/api/v1/alerts", params=params)
@@ -352,6 +377,20 @@ class VigioraClient:
             body["volume"] = volume
         return await self.request(
             "POST", f"/api/v1/rooms/{room_id}/actions/speak", json_body=body, operation_id=OP_SPEAK
+        )
+
+    async def camera_speak(
+        self, camera_id: int, text: str, volume: float | None = None
+    ) -> dict[str, Any]:
+        """POST /api/v1/cameras/{id}/actions/speak (cameras:control, confirm; API 1.17.0)."""
+        body: dict[str, Any] = {"text": text}
+        if volume is not None:
+            body["volume"] = volume
+        return await self.request(
+            "POST",
+            f"/api/v1/cameras/{camera_id}/actions/speak",
+            json_body=body,
+            operation_id=OP_SPEAK_CAMERA,
         )
 
     async def ptz_goto_preset(self, camera_id: int, token: str) -> dict[str, Any]:

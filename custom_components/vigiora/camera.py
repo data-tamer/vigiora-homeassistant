@@ -1,22 +1,28 @@
-"""Camera entities: snapshots from /api/v1/cameras/{id}/snapshot.
+"""Camera entities: snapshots and, on API 1.17.0+, live video.
 
-API v1 exposes no live stream URL (RTSP/HLS/WebRTC) for third parties, and the
-camera's own `stream_url` is the source address with credentials redacted, so
-these cameras are snapshot-only.
+Snapshots come from /api/v1/cameras/{id}/snapshot. Live video uses a signed,
+short-lived HLS link (POST /cameras/{id}/actions/stream-url, feature
+"stream_url"): the link carries no API key, and it is renewed before it
+expires (Stream.update_source). Older servers: snapshot only.
 """
 
 from __future__ import annotations
 
+from datetime import datetime
 import logging
 
-from homeassistant.components.camera import Camera
-from homeassistant.core import HomeAssistant
+from homeassistant.components.camera import Camera, CameraEntityFeature
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.event import async_track_point_in_utc_time
+from homeassistant.util import dt as dt_util
 
 from . import VigioraConfigEntry
 from .api import VigioraError
+from .const import STREAM_URL_REFRESH_MARGIN, STREAM_URL_TTL
 from .coordinator import VigioraCoordinator
 from .entity import VigioraCameraEntity, has_video
+from .vigiora_things.models import FEATURE_STREAM_URL
 
 _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 0
@@ -47,6 +53,64 @@ class VigioraCamera(VigioraCameraEntity, Camera):
         VigioraCameraEntity.__init__(self, coordinator, camera_id, "camera")
         Camera.__init__(self)
         self._last_image: bytes | None = None
+        self._stream_url: str | None = None
+        self._stream_expires: datetime | None = None
+        self._unsub_refresh: CALLBACK_TYPE | None = None
+        if coordinator.caps.has(FEATURE_STREAM_URL) and coordinator.caps.can("cameras:read"):
+            self._attr_supported_features = CameraEntityFeature.STREAM
+
+    async def _mint_stream_url(self) -> str | None:
+        """A fresh signed HLS link (absolute), and the renewal timer."""
+        client = self.coordinator.client
+        try:
+            res = await client.stream_url(self.camera_id, STREAM_URL_TTL)
+        except VigioraError as err:
+            _LOGGER.debug("Live video link for camera %s failed: %s", self.camera_id, err)
+            return None
+        hls = res.get("hls_url")
+        if not isinstance(hls, str) or not hls:
+            return None
+        self._stream_url = client.url + hls if hls.startswith("/") else hls
+        self._stream_expires = dt_util.parse_datetime(str(res.get("expires_at") or ""))
+        self._schedule_refresh()
+        return self._stream_url
+
+    @callback
+    def _schedule_refresh(self) -> None:
+        if self._unsub_refresh is not None:
+            self._unsub_refresh()
+            self._unsub_refresh = None
+        if self._stream_expires is None or self.hass is None:
+            return
+        at = max(self._stream_expires - STREAM_URL_REFRESH_MARGIN, dt_util.utcnow())
+
+        async def _refresh(_now: datetime) -> None:
+            self._unsub_refresh = None
+            url = await self._mint_stream_url()
+            if url and self.stream is not None:
+                # The running stream switches to the new link.
+                self.stream.update_source(url)
+
+        self._unsub_refresh = async_track_point_in_utc_time(self.hass, _refresh, at)
+
+    async def stream_source(self) -> str | None:
+        """The live HLS link (renewed before it expires)."""
+        if not self.supported_features & CameraEntityFeature.STREAM:
+            return None
+        if (
+            self._stream_url
+            and self._stream_expires
+            and self._stream_expires - dt_util.utcnow() > STREAM_URL_REFRESH_MARGIN
+        ):
+            return self._stream_url
+        return await self._mint_stream_url()
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Cancel the renewal."""
+        if self._unsub_refresh is not None:
+            self._unsub_refresh()
+            self._unsub_refresh = None
+        await super().async_will_remove_from_hass()
 
     @property
     def is_on(self) -> bool:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -26,6 +27,14 @@ from .coordinator import (
 )
 from .entity import server_device_info
 from .services import async_setup_services
+from .vigiora_things import (
+    AiohttpTransport,
+    ServerInfo,
+    ThingsApiError,
+    ThingsAuthError,
+    ThingsClient,
+    ThingsError,
+)
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -37,6 +46,7 @@ PLATFORMS: list[Platform] = [
 ]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -48,6 +58,8 @@ class VigioraRuntime:
     motion: VigioraMotionCoordinator | None
     events: VigioraEventStream
     version: str | None
+    things: ThingsClient
+    server: ServerInfo | None = None
 
 
 type VigioraConfigEntry = ConfigEntry[VigioraRuntime]
@@ -80,7 +92,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: VigioraConfigEntry) -> b
         key_id=auth.get("key_id"),
     )
 
+    # Feature detection: GET /api/v1/server (API 1.17.0+; None = older).
+    things = ThingsClient(AiohttpTransport(session), client.url, entry.data[CONF_API_KEY])
+    try:
+        caps.server = await things.server_info()
+    except ThingsAuthError as err:
+        raise ConfigEntryAuthFailed(str(err)) from err
+    except ThingsApiError as err:
+        _LOGGER.debug("Server identity not readable: %s", err.code)
+    except ThingsError as err:
+        raise ConfigEntryNotReady(f"Cannot reach the Vigiora server: {err}") from err
+
     coordinator = VigioraCoordinator(hass, entry, client, caps)
+    coordinator.things_client = things
+    if caps.things_mode:
+        try:
+            coordinator.catalog = await things.catalog()
+        except ThingsError as err:
+            _LOGGER.debug("Things catalogue not readable (%s): using API v1 entities", err)
+            caps.server = None
+        else:
+            if not coordinator.catalog.compatible:
+                _LOGGER.warning(
+                    "Vigiora Things catalogue %s is not supported; using API v1 entities",
+                    coordinator.catalog.version,
+                )
+                caps.server = None
     try:
         await coordinator.async_probe_capabilities()
     except VigioraAuthError as err:
@@ -95,8 +132,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: VigioraConfigEntry) -> b
         await motion.async_config_entry_first_refresh()
 
     version = (coordinator.data.status or {}).get("version") if coordinator.data else None
+    if caps.server is not None and caps.server.version:
+        version = caps.server.version
     entry.runtime_data = VigioraRuntime(
-        client=client, coordinator=coordinator, motion=motion, events=events, version=version
+        client=client,
+        coordinator=coordinator,
+        motion=motion,
+        events=events,
+        version=version,
+        things=things,
+        server=caps.server,
     )
 
     # The server device first: camera and room devices hang off it.

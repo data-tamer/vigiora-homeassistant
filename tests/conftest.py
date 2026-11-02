@@ -83,9 +83,22 @@ def add_api(
     hitl: bool = False,
     me_status: int = HTTPStatus.OK,
     analytics: bool = True,
+    things: bool = False,
 ) -> None:
-    """Register the mocked API v1 endpoints."""
+    """Register the mocked API v1 endpoints.
+
+    things=False is a server older than API 1.17.0 (GET /server is 404);
+    things=True a 1.18.0 server with the Things model.
+    """
     scopes = READ_SCOPES if scopes is None else scopes
+    if things:
+        add_things_api(aioclient_mock)
+    else:
+        aioclient_mock.get(
+            f"{URL}/api/v1/server",
+            status=HTTPStatus.NOT_FOUND,
+            json={"error": {"code": "not_found", "message": "No such endpoint", "details": {}}},
+        )
     aioclient_mock.get(
         f"{URL}/api/v1/me",
         status=me_status,
@@ -212,4 +225,225 @@ def config_entry() -> MockConfigEntry:
         title="Vigiora site",
         unique_id=URL,
         data={CONF_URL: URL, CONF_API_KEY: API_KEY, CONF_VERIFY_SSL: True},
+    )
+
+
+FEATURES = [
+    "alerts_summary",
+    "camera_speak",
+    "guardian_presence",
+    "motion_events",
+    "presence_events",
+    "server_identity",
+    "signed_media_urls",
+    "stream_url",
+    "things",
+    "things_event_format",
+]
+SERVER = {
+    "id": "5f1c0ffee5f1c0ffee5f1c0ffee5f1c0",
+    "name": "base01",
+    "site_address": "https://base01.vigiora.com",
+    "version": "1.7.0",
+    "edition": "self_hosted",
+    "install": "native",
+    "timezone": "Asia/Bangkok",
+    "api_version": "1.18.0",
+    "features": FEATURES,
+    "time": "2026-11-02T00:00:00Z",
+}
+
+
+def cap(
+    name: str,
+    state: dict[str, Any] | None = None,
+    commands: list[str] | None = None,
+    events: list[str] | None = None,
+) -> dict[str, Any]:
+    """A thing capability."""
+    return {
+        "name": name,
+        "version": "1.0",
+        "state": state or {},
+        "commands": commands or [],
+        "events": events or [],
+    }
+
+
+def camera_thing(
+    cid: int,
+    name: str,
+    *,
+    online: bool = True,
+    recording: bool = True,
+    ptz: bool = False,
+    speak: bool = False,
+) -> dict[str, Any]:
+    """A camera thing."""
+    caps = [
+        cap("device", {"online": online}),
+        cap(
+            "alert",
+            {"unacknowledged": 2, "by_severity": {"high": 1, "normal": 1}},
+            ["alert.acknowledge"],
+        ),
+        cap("recording", {"on": recording}, ["recording.turn_on", "recording.turn_off"]),
+        cap("video_stream", {"available": True}, ["video_stream.get_url"]),
+        cap("snapshot", {}, ["snapshot.get_url"]),
+        cap(
+            "motion",
+            {"active": False, "since": None},
+            [],
+            ["vigiora.motion.started", "vigiora.motion.ended"],
+        ),
+        cap("presence", {"person": None}, [], ["vigiora.presence.changed"]),
+        cap("object_detection"),
+        cap("ai_guardian", {"on": False}, ["ai_guardian.turn_on", "ai_guardian.turn_off"]),
+        cap("describe", {}, ["describe.run"]),
+        cap("detect_objects", {}, ["detect_objects.run"]),
+    ]
+    if ptz:
+        caps.append(cap("ptz", {}, ["ptz.move", "ptz.stop", "ptz.goto_preset"]))
+    if speak:
+        caps.append(cap("speak", {}, ["speak.say"]))
+    return {
+        "id": f"camera:{cid}",
+        "kind": "camera",
+        "name": name,
+        "parent_id": "server",
+        "site_id": None,
+        "room_ids": ["room:7"] if cid == 1 else [],
+        "online": online,
+        "manufacturer": None,
+        "model": None,
+        "capabilities": caps,
+    }
+
+
+THINGS = [
+    {
+        "id": "server",
+        "kind": "server",
+        "name": "base01",
+        "parent_id": None,
+        "site_id": None,
+        "room_ids": [],
+        "online": True,
+        "manufacturer": "Vigiora",
+        "model": "Vigiora Server",
+        "capabilities": [
+            cap("device", {"online": True}),
+            cap(
+                "alert",
+                {"unacknowledged": 746, "by_severity": {"normal": 746}},
+                ["alert.acknowledge"],
+            ),
+        ],
+    },
+    camera_thing(1, "Entrance", ptz=True, speak=True),
+    camera_thing(2, "Garden", online=False, recording=False),
+    {
+        "id": "room:7",
+        "kind": "room",
+        "name": "Home",
+        "parent_id": "server",
+        "site_id": None,
+        "room_ids": [],
+        "online": None,
+        "manufacturer": None,
+        "model": None,
+        "capabilities": [
+            cap("ai_mode", {"mode": "both"}, ["ai_mode.set"]),
+            cap("speak", {}, ["speak.say"]),
+        ],
+    },
+    {
+        "id": "area:1",
+        "kind": "area",
+        "name": "Shop",
+        "parent_id": "server",
+        "site_id": None,
+        "room_ids": [],
+        "online": None,
+        "manufacturer": None,
+        "model": None,
+        "capabilities": [
+            cap("occupancy", {"count": 3, "capacity": 10, "free": 7}),
+            cap("counter", {"in_today": 42, "out_today": 39}),
+        ],
+    },
+]
+
+
+def _command(name: str, ops: dict[str, str], scope: str, hitl: str = "none") -> dict[str, Any]:
+    return {
+        "name": name,
+        "description": "",
+        "operations": ops,
+        "scope": scope,
+        "roles": ["admin", "operator"],
+        "hitl": hitl,
+        "params_schema": {},
+    }
+
+
+CATALOG = {
+    "version": "1.0",
+    "kinds": ["server", "camera", "microphone", "speaker", "room", "area"],
+    "envelope": {},
+    "capabilities": [
+        {
+            "name": "recording",
+            "version": "1.0",
+            "description": "",
+            "kinds": ["camera"],
+            "state_schema": {},
+            "events": [],
+            "commands": [
+                _command("turn_on", {"camera": "updateCamera"}, "cameras:write", "confirm"),
+                _command("turn_off", {"camera": "updateCamera"}, "cameras:write", "confirm"),
+            ],
+        },
+        {
+            "name": "ai_guardian",
+            "version": "1.0",
+            "description": "",
+            "kinds": ["camera"],
+            "state_schema": {},
+            "events": [],
+            "commands": [
+                _command("turn_on", {"camera": "enableCameraAI"}, "cameras:write", "confirm"),
+                _command("turn_off", {"camera": "disableCameraAI"}, "cameras:write", "confirm"),
+            ],
+        },
+        {
+            "name": "ai_mode",
+            "version": "1.0",
+            "description": "",
+            "kinds": ["room"],
+            "state_schema": {},
+            "events": [],
+            "commands": [_command("set", {"room": "updateRoom"}, "cameras:write", "confirm")],
+        },
+    ],
+}
+
+
+def add_things_api(aioclient_mock: AiohttpClientMocker) -> None:
+    """The API 1.17.0/1.18.0 endpoints."""
+    aioclient_mock.get(f"{URL}/api/v1/server", json=SERVER)
+    aioclient_mock.get(f"{URL}/api/v1/thing-capabilities", json=CATALOG)
+    aioclient_mock.get(
+        f"{URL}/api/v1/things", json={"data": THINGS, "next_cursor": None, "catalog_version": "1.0"}
+    )
+    aioclient_mock.get(
+        f"{URL}/api/v1/alerts/summary",
+        json={
+            "unacknowledged": 746,
+            "alerts": 12,
+            "by_severity": {"normal": 746},
+            "cameras": [],
+            "latest_at": None,
+            "latest_id": None,
+        },
     )

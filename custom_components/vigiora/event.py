@@ -46,6 +46,14 @@ async def async_setup_entry(
     )
 
 
+def _signed(base_url: str, data: dict[str, Any]) -> str | None:
+    """The event's signed snapshot link (API 1.17.0), absolute; usable without the key."""
+    url = data.get("snapshot_url")
+    if not isinstance(url, str) or not url:
+        return None
+    return base_url + url if url.startswith("/") else url
+
+
 def alert_attributes(base_url: str, event: dict[str, Any]) -> dict[str, Any]:
     """Event attributes of an alert.created event."""
     data = event.get("data") or {}
@@ -63,7 +71,9 @@ def alert_attributes(base_url: str, event: dict[str, Any]) -> dict[str, Any]:
         "entry_id": None,
         "source": data.get("source"),
         "occurred_at": data.get("detected_at") or event.get("time"),
-        "snapshot_url": f"{base_url}/api/v1/alerts/{alert_id}/snapshot" if alert_id else None,
+        "snapshot_url": _signed(base_url, data)
+        or (f"{base_url}/api/v1/alerts/{alert_id}/snapshot" if alert_id else None),
+        "snapshot_url_expires_at": data.get("snapshot_url_expires_at"),
         "event_id": event.get("id"),
     }
 
@@ -82,11 +92,16 @@ def scene_attributes(base_url: str, event: dict[str, Any]) -> dict[str, Any]:
         "audio_transcript": data.get("audio_transcript"),
         "person_present_seconds": data.get("person_present_seconds"),
         "occurred_at": data.get("observed_at") or event.get("time"),
-        "snapshot_url": (
+        "person_present": data.get("person_present"),
+        "detections": data.get("detections"),
+        "detector_checked": data.get("detector_checked"),
+        "snapshot_url": _signed(base_url, data)
+        or (
             f"{base_url}/api/v1/guardian/entries/{entry_id}/frame"
             if entry_id and has_frame
             else None
         ),
+        "snapshot_url_expires_at": data.get("snapshot_url_expires_at"),
         "event_id": event.get("id"),
     }
 
@@ -94,7 +109,9 @@ def scene_attributes(base_url: str, event: dict[str, Any]) -> dict[str, Any]:
 class VigioraEvent(VigioraCameraEntity, EventEntity):
     """Guardian alerts and scene descriptions of one camera.
 
-    `snapshot_url` needs the API key (Authorization header) to be fetched.
+    On API 1.17.0+ `snapshot_url` is a signed link valid for 15 minutes that
+    needs no key (notifications can show it); on older servers it needs the
+    API key (Authorization header).
     """
 
     _attr_translation_key = "guardian"

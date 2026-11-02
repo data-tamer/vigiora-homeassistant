@@ -12,10 +12,17 @@ from .api import (
     VigioraError,
 )
 from .const import DOMAIN
+from .vigiora_things import ThingsApiError, ThingsAuthError, ThingsConnectionError, ThingsError
 
 
-def to_ha_error(err: VigioraError) -> HomeAssistantError:
+def to_ha_error(err: VigioraError | ThingsError) -> HomeAssistantError:
     """Translate an API error for an entity action or a service call."""
+    if isinstance(err, ThingsAuthError):
+        err = VigioraAuthError(err.status, err.code, err.message, err.details)
+    elif isinstance(err, ThingsApiError):
+        err = VigioraApiError(err.status, err.code, err.message, err.details)
+    elif isinstance(err, ThingsConnectionError):
+        err = VigioraConnectionError(str(err))
     if isinstance(err, VigioraApprovalRequired):
         return ServiceValidationError(
             translation_domain=DOMAIN,

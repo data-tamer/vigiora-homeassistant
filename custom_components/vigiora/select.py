@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.components.select import SelectEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
@@ -9,11 +11,13 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import VigioraConfigEntry
+from . import VigioraConfigEntry, things_map
 from .api import VigioraError
 from .const import DOMAIN, MANUFACTURER, ROOM_AI_MODES
 from .coordinator import VigioraCoordinator
+from .entity import VigioraThingEntity, thing_allowed
 from .errors import to_ha_error
+from .vigiora_things import plan
 
 PARALLEL_UPDATES = 1
 
@@ -25,6 +29,16 @@ async def async_setup_entry(
 ) -> None:
     """Add an AI mode select per room."""
     coordinator = entry.runtime_data.coordinator
+    if coordinator.caps.things_mode:
+        async_add_entities(
+            VigioraThingSelect(coordinator, p.thing_id, p.rule)
+            for p in plan(
+                coordinator.data.things.values(),
+                things_map.rules("select"),
+                allow=thing_allowed(coordinator),
+            )
+        )
+        return
     if not (coordinator.caps.can_write_cameras and coordinator.caps.rooms_readable):
         return
     async_add_entities(VigioraRoomAIMode(coordinator, rid) for rid in coordinator.data.rooms)
@@ -75,3 +89,24 @@ class VigioraRoomAIMode(CoordinatorEntity[VigioraCoordinator], SelectEntity):
             self.coordinator.async_update_listeners()
         else:
             await self.coordinator.async_request_refresh()
+
+
+class VigioraThingSelect(VigioraThingEntity, SelectEntity):
+    """A room's AI mode: the capability's state and its set command."""
+
+    def __init__(self, coordinator: VigioraCoordinator, thing_id: str, rule: Any) -> None:
+        """Initialise."""
+        super().__init__(coordinator, thing_id, rule)
+        self._attr_options = list(rule.options)
+
+    @property
+    def current_option(self) -> str | None:
+        """The current value."""
+        value = self.value
+        return value if value in self._attr_options else None
+
+    async def async_select_option(self, option: str) -> None:
+        """Run the table row's set command."""
+        command, param = self.rule.set_command, self.rule.set_param
+        if command and param:
+            await self.run_command(command, {param: option})

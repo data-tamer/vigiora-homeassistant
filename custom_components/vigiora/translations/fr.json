@@ -155,6 +155,7 @@
       "fields": {
         "text": {"name": "Texte", "description": "Ce qu'il faut dire (1000 caractères au maximum)."},
         "camera": {"name": "Caméra", "description": "Parler dans la pièce à laquelle appartient cette caméra."},
+        "camera_id": {"name": "ID de caméra", "description": "Un ID de caméra Vigiora : parle par le haut-parleur de cette caméra (API 1.17.0+), sinon dans sa pièce."},
         "output_id": {"name": "Id du haut-parleur", "description": "L'id d'un haut-parleur (sortie) Vigiora ; par défaut, le haut-parleur par défaut de la pièce."},
         "room_id": {"name": "Id de la pièce", "description": "La pièce Vigiora où parler."},
         "volume": {"name": "Volume", "description": "De 0 à 2 (1 = inchangé)."},

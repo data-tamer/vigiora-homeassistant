@@ -155,6 +155,7 @@
       "fields": {
         "text": {"name": "テキスト", "description": "読み上げる内容（最大 1000 文字）。"},
         "camera": {"name": "カメラ", "description": "このカメラが属する部屋で読み上げます。"},
+        "camera_id": {"name": "カメラ ID", "description": "Vigiora のカメラ ID：そのカメラ自身のスピーカーで話します（API 1.17.0 以降）。それ以外はカメラのルームで話します。"},
         "output_id": {"name": "スピーカー ID", "description": "Vigiora のスピーカー（出力）の ID。省略すると部屋の既定のスピーカーを使います。"},
         "room_id": {"name": "部屋 ID", "description": "読み上げる Vigiora の部屋。"},
         "volume": {"name": "音量", "description": "0 から 2（1 = 変更なし）。"},

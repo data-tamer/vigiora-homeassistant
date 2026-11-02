@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -14,10 +15,17 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_track_point_in_utc_time
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import VigioraConfigEntry
+from . import VigioraConfigEntry, things_map
 from .const import PERSON_HOLD
 from .coordinator import ONLINE_STATUSES, VigioraCoordinator, VigioraMotionCoordinator
-from .entity import VigioraCameraEntity, camera_device_info, camera_unique_id, has_video
+from .entity import (
+    VigioraCameraEntity,
+    VigioraThingEntity,
+    camera_device_info,
+    camera_unique_id,
+    has_video,
+)
+from .vigiora_things import plan
 
 PARALLEL_UPDATES = 0
 
@@ -31,6 +39,17 @@ async def async_setup_entry(
     runtime = entry.runtime_data
     coordinator = runtime.coordinator
     caps = coordinator.caps
+    if caps.things_mode:
+        # Things model: one entity per (thing, table row); state is pushed.
+        async_add_entities(
+            VigioraThingBinarySensor(coordinator, p.thing_id, p.rule)
+            for p in plan(
+                coordinator.data.things.values(),
+                things_map.rules("binary_sensor"),
+                allow=lambda _rule, thing: coordinator.camera_selected(thing.object_id),
+            )
+        )
+        return
     entities: list[BinarySensorEntity] = []
     for cid in coordinator.data.cameras:
         if not coordinator.camera_selected(cid):
@@ -150,3 +169,33 @@ class VigioraMotionSensor(CoordinatorEntity[VigioraMotionCoordinator], BinarySen
             "motion_percent": sample.get("motion_percent"),
             "sampled_at": sample.get("timestamp"),
         }
+
+
+class VigioraThingBinarySensor(VigioraThingEntity, BinarySensorEntity):
+    """Motion, person in view or online, from a thing's capability state.
+
+    Motion and presence are pushed (motion.started/ended, presence.changed):
+    nothing is polled for them. A camera no detector reports presence for
+    falls back to recent evidence of a person (person alerts, Guardian).
+    """
+
+    def __init__(self, coordinator: VigioraCoordinator, thing_id: str, rule: Any) -> None:
+        """Initialise."""
+        super().__init__(coordinator, thing_id, rule)
+        self._attr_device_class = BinarySensorDeviceClass(rule.device_class)
+
+    @property
+    def is_on(self) -> bool | None:
+        """The capability's state."""
+        value = self.value
+        if self.rule.capability == "presence" and value is None and self.camera_id is not None:
+            return self.coordinator.person_in_view(self.camera_id)
+        return None if value is None else bool(value)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object] | None:
+        """When motion started."""
+        thing = self.thing
+        if self.rule.capability == "motion" and thing is not None:
+            return {"since": thing.state("motion", "since")}
+        return None

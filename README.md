@@ -4,11 +4,14 @@ A [HACS](https://hacs.xyz) custom integration that brings a [Vigiora](https://vi
 Home Assistant: cameras, motion and presence, Guardian alerts and scene descriptions, analytics occupancy,
 room AI mode, and actions (speak, PTZ, describe, detect objects, acknowledge alerts).
 
-It uses only Vigiora's **public API v1** (`/api/v1`, OpenAPI 1.16.0) with a scoped API key. Live updates
-come from the server's event stream (Server-Sent Events) with automatic reconnect and backoff; if the stream
-is down, it falls back to polling every 60 seconds.
+It uses only Vigiora's **public API v1** (`/api/v1`) with a scoped API key. On a server with API 1.18.0 or
+later it uses the platform-neutral **Things model** (`/api/v1/things`, events in the Things envelope) through
+the `vigiora_things` client library in this repository; older servers (API 1.16) keep working with the 0.1.0
+behaviour (feature detection via `GET /api/v1/server`). Live updates come from the server's event stream
+(Server-Sent Events) with automatic reconnect and backoff; if the stream is down, it falls back to polling
+every 60 seconds.
 
-Status: 0.1.0, private preview.
+Status: 0.2.0, private preview.
 
 ## Install (HACS custom repository)
 
@@ -64,22 +67,25 @@ Per camera (device per camera, under the server device):
 
 | Entity | Source |
 |---|---|
-| `camera` | `GET /cameras/{id}/snapshot` (snapshot only, see below) |
-| `binary_sensor` Motion | `GET /motion/latest` every 10 s (on when `has_motion` and the sample is < 90 s old) |
-| `binary_sensor` Person in view | `person`/`face:*` detections (`alert.created`) and Guardian `person_present_seconds`; stays on 2 min |
-| `binary_sensor` Online | camera `status` (`online`/`standby`), pushed by `camera.online` / `camera.offline` |
-| `event` Guardian | `alert` (from `alert.created`) and `scene_description` (from `guardian.event`) with `description`, `severity`, `rule`, `alert_id`, `entry_id`, `snapshot_url`, … |
-| `switch` Recording | `PATCH /cameras/{id}` `recording_enabled` |
-| `switch` AI Guardian | `POST /cameras/{id}/actions/enable-ai` / `disable-ai` (plan limit → clear error) |
+| `camera` | snapshot `GET /cameras/{id}/snapshot`; **live video** (API 1.17+): a signed HLS link from `POST /cameras/{id}/actions/stream-url`, renewed before it expires |
+| `binary_sensor` Motion | API 1.18+: pushed `motion.started` / `motion.ended` (no polling); older: `GET /motion/latest` every 10 s |
+| `binary_sensor` Person in view | API 1.18+: pushed `presence.changed` (detector presence); otherwise `person`/`face:*` detections and Guardian presence, on for 2 min |
+| `binary_sensor` Online | camera `status`, pushed by `camera.online` / `camera.offline` |
+| `event` Guardian | `alert` (from `alert.created`) and `scene_description` (from `guardian.event`, with `person_present`, `detections`, `detector_checked` on API 1.17+ — no extra request) with `description`, `severity`, `rule`, `alert_id`, `entry_id`, `snapshot_url`, … |
+| `switch` Recording | Things command `recording.turn_on/off` (older: `PATCH /cameras/{id}`) |
+| `switch` AI Guardian | Things command `ai_guardian.turn_on/off` (older: `enable-ai` / `disable-ai`) |
 
-Server: **Unacknowledged alerts**, **Cameras online**, **Visitors today**; per analytics area: **occupancy**
-and **visitors today** (`/analytics/occupancy`, `/analytics/counts?period=today`).
-Per room: **AI mode** select (`live` / `guardian` / `both`, `PATCH /rooms/{id}`).
+Server: **Unacknowledged alerts** (API 1.17+: `GET /alerts/summary`, any key with `alerts:read`), **Cameras
+online**, **Visitors today**; per analytics area: **occupancy** and **visitors today**. Per room: **AI mode**
+select. The server device shows the server's own name, version and id (`GET /api/v1/server`).
 
-`snapshot_url` attributes point at the Vigiora API and need the API key to be fetched.
+`snapshot_url` attributes: on API 1.17+ a signed link valid for 15 minutes that needs no API key (usable in
+notifications); on older servers they point at the API and need the key.
 
-**No live video stream:** API v1 does not expose an RTSP/HLS/WebRTC URL for third parties (a camera's
-`stream_url` is its source address with credentials redacted), so cameras are snapshot-only.
+On a Things server the entities are built from one table (`custom_components/vigiora/things_map.py`:
+capability → platform, device class, state field, commands). `contrib/mqtt_bridge/vigiora_mqtt.py` is a second
+adapter over the same library with its own table (MQTT with Home Assistant MQTT discovery), as a proof that
+the layer is reusable.
 
 Options (**Configure**): which cameras to expose, which event types, and whether every detection or only
 detections promoted to alerts fire the `alert` event.
@@ -88,15 +94,16 @@ detections promoted to alerts fire the `alert` event.
 
 | Action | Endpoint |
 |---|---|
-| `vigiora.speak` (`text`, and `camera`, `room_id` or `output_id`) | `POST /rooms/{id}/actions/speak` |
+| `vigiora.speak` (`text`, and `camera`/`camera_id`, `room_id` or `output_id`) | API 1.17+ with a camera: `POST /cameras/{id}/actions/speak`; else `POST /rooms/{id}/actions/speak` |
 | `vigiora.ptz_goto_preset` (`camera`, `preset` name or token) | `GET /cameras/{id}/ptz/presets`, `POST …/presets/{token}/actions/goto` |
 | `vigiora.ptz_move` (`camera`, `pan`, `tilt`, `zoom`, `duration_ms`) | `POST /cameras/{id}/ptz/actions/move` |
 | `vigiora.describe_camera` (`camera`) → response | `POST /cameras/{id}/actions/analyze` |
 | `vigiora.detect_objects` (`camera`, `prompts`) → response | `POST /cameras/{id}/actions/detect-objects` |
 | `vigiora.acknowledge_alert` (`alert_id`) | `POST /alerts/{id}/actions/acknowledge` |
 
-Vigiora speaks only through rooms: with `camera`, the camera's room is used; with only `output_id`, the
-room that has that speaker.
+With a camera on API 1.17+, the camera's own speaker is used (no room needed); a camera without a speaker
+output, or an older server, speaks in the camera's room; with only `output_id`, the room that has that
+speaker.
 
 ### Human in the loop
 

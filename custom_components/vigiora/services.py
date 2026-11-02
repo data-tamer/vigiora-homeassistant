@@ -17,7 +17,7 @@ from homeassistant.core import (
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv, entity_registry as er
 
-from .api import VigioraError
+from .api import VigioraApiError, VigioraError
 from .const import (
     ATTR_ALERT_ID,
     ATTR_CAMERA,
@@ -45,6 +45,7 @@ from .const import (
 )
 from .entity import parse_camera_unique_id
 from .errors import to_ha_error
+from .vigiora_things.models import FEATURE_CAMERA_SPEAK
 
 if TYPE_CHECKING:
     from . import VigioraConfigEntry
@@ -155,6 +156,26 @@ async def _speak(hass: HomeAssistant, call: ServiceCall) -> None:
     room_id: int | None = call.data.get(ATTR_ROOM_ID)
     output_id: int | None = call.data.get(ATTR_OUTPUT_ID)
     try:
+        if (
+            camera_id is not None
+            and room_id is None
+            and output_id is None
+            and runtime.coordinator.caps.has(FEATURE_CAMERA_SPEAK)
+        ):
+            # API 1.17.0: the camera's own speaker, no room needed.
+            volume = call.data.get(ATTR_VOLUME)
+            try:
+                await client.camera_speak(
+                    camera_id,
+                    call.data[ATTR_TEXT],
+                    min(volume, 1.0) if volume is not None else None,
+                )
+            except VigioraApiError as err:
+                if err.status != 404:
+                    raise
+                # No speaker output on the camera: speak in its room.
+            else:
+                return
         if room_id is None:
             rooms = runtime.coordinator.data.rooms if runtime.coordinator.data else {}
             if not rooms and runtime.coordinator.caps.can("settings:read"):

@@ -155,6 +155,7 @@
       "fields": {
         "text": {"name": "ข้อความ", "description": "สิ่งที่จะพูด (ไม่เกิน 1000 ตัวอักษร)"},
         "camera": {"name": "กล้อง", "description": "พูดในห้องที่กล้องนี้อยู่"},
+        "camera_id": {"name": "รหัสกล้อง", "description": "รหัสกล้อง Vigiora: พูดผ่านลำโพงของกล้องนั้นเอง (API 1.17.0+) มิฉะนั้นพูดในห้องของกล้อง"},
         "output_id": {"name": "ID ลำโพง", "description": "ID ของลำโพง (เอาต์พุต) ของ Vigiora ค่าเริ่มต้นคือลำโพงเริ่มต้นของห้อง"},
         "room_id": {"name": "ID ห้อง", "description": "ห้อง Vigiora ที่จะพูด"},
         "volume": {"name": "ระดับเสียง", "description": "0 ถึง 2 (1 = ไม่เปลี่ยน)"},

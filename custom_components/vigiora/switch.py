@@ -11,11 +11,12 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import VigioraConfigEntry
+from . import VigioraConfigEntry, things_map
 from .api import VigioraClient, VigioraError
 from .coordinator import VigioraCoordinator
-from .entity import VigioraCameraEntity
+from .entity import VigioraCameraEntity, VigioraThingEntity, thing_allowed
 from .errors import to_ha_error
+from .vigiora_things import plan
 
 PARALLEL_UPDATES = 1
 
@@ -53,6 +54,16 @@ async def async_setup_entry(
 ) -> None:
     """Add the switches when the key may change cameras."""
     coordinator = entry.runtime_data.coordinator
+    if coordinator.caps.things_mode:
+        async_add_entities(
+            VigioraThingSwitch(coordinator, p.thing_id, p.rule)
+            for p in plan(
+                coordinator.data.things.values(),
+                things_map.rules("switch"),
+                allow=thing_allowed(coordinator),
+            )
+        )
+        return
     if not coordinator.caps.can_write_cameras:
         return
     async_add_entities(
@@ -98,3 +109,23 @@ class VigioraSwitch(VigioraCameraEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off."""
         await self._set(False)
+
+
+class VigioraThingSwitch(VigioraThingEntity, SwitchEntity):
+    """Recording or AI Guardian: a capability's on state and its commands."""
+
+    @property
+    def is_on(self) -> bool | None:
+        """The capability's state."""
+        value = self.value
+        return None if value is None else bool(value)
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Run the table row's on command."""
+        if self.rule.on_command:
+            await self.run_command(self.rule.on_command)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Run the table row's off command."""
+        if self.rule.off_command:
+            await self.run_command(self.rule.off_command)

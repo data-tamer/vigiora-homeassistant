@@ -14,9 +14,10 @@ from homeassistant.components.sensor import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import VigioraConfigEntry
+from . import VigioraConfigEntry, things_map
 from .coordinator import ONLINE_STATUSES, VigioraCoordinator, VigioraData
-from .entity import VigioraServerEntity
+from .entity import VigioraServerEntity, VigioraThingEntity, thing_allowed
+from .vigiora_things import plan
 
 PARALLEL_UPDATES = 0
 
@@ -67,6 +68,21 @@ async def async_setup_entry(
     coordinator = entry.runtime_data.coordinator
     caps = coordinator.caps
     entities: list[SensorEntity] = []
+    if caps.things_mode:
+        # Alert counts and the areas' occupancy and visitors from the table.
+        entities.extend(
+            VigioraThingSensor(coordinator, p.thing_id, p.rule)
+            for p in plan(
+                coordinator.data.things.values(),
+                things_map.rules("sensor"),
+                allow=thing_allowed(coordinator),
+            )
+        )
+        entities.append(VigioraServerSensor(coordinator, SERVER_SENSORS[1]))  # cameras online
+        if coordinator.data.occupancy:
+            entities.append(VigioraServerSensor(coordinator, VISITORS_TOTAL))
+        async_add_entities(entities)
+        return
     for desc in SERVER_SENSORS:
         if desc.key == "unacknowledged_alerts" and coordinator.data.unacknowledged_alerts is None:
             continue
@@ -163,3 +179,33 @@ class VigioraAreaVisitorsSensor(_AreaSensor):
     def native_value(self) -> int | None:
         """Visitors today."""
         return self.coordinator.data.visitors_today.get(self.area_id)
+
+
+class VigioraThingSensor(VigioraThingEntity, SensorEntity):
+    """A capability's numeric state (alert count, occupancy, visitors today)."""
+
+    def __init__(self, coordinator: VigioraCoordinator, thing_id: str, rule: Any) -> None:
+        """Initialise."""
+        super().__init__(coordinator, thing_id, rule)
+        if rule.state_class:
+            self._attr_state_class = SensorStateClass(rule.state_class)
+        thing = coordinator.thing(thing_id)
+        if thing is not None and thing.kind == "area":
+            self._attr_translation_placeholders = {"area": thing.name or str(thing.object_id)}
+
+    @property
+    def native_value(self) -> Any:
+        """The state field."""
+        return self.value
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """The rest of the capability's state."""
+        thing = self.thing
+        if thing is None:
+            return None
+        cap = thing.capabilities.get(self.rule.capability)
+        attrs = {k: v for k, v in (cap.state if cap else {}).items() if k != self.rule.field}
+        if thing.kind == "area":
+            attrs["area_id"] = thing.object_id
+        return attrs or None

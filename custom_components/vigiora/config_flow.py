@@ -49,6 +49,7 @@ from .const import (
     DOMAIN,
     EVENT_TYPES,
 )
+from .vigiora_things import AiohttpTransport, ThingsClient, ThingsError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -101,13 +102,31 @@ async def validate_input(
     if not has_scope(scopes, "cameras:read"):
         raise MissingScope
     version = None
-    if has_scope(scopes, "settings:read") and user.get("role") in ("admin", "operator"):
+    name = server_name(url)
+    # API 1.17.0+: the server's own name and version, readable by any key.
+    try:
+        server = await ThingsClient(AiohttpTransport(session), url, api_key).server_info()
+    except ThingsError as err:
+        _LOGGER.debug("Server identity not readable: %s", err)
+        server = None
+    if server is not None:
+        name = server.name or name
+        version = server.version or None
+    if (
+        version is None
+        and has_scope(scopes, "settings:read")
+        and user.get("role")
+        in (
+            "admin",
+            "operator",
+        )
+    ):
         try:
             version = (await client.get_system_status()).get("version")
         except VigioraApiError as err:
             _LOGGER.debug("System status not readable: %s", err.code)
     return {
-        "name": server_name(url),
+        "name": name,
         "version": version or "?",
         "username": user.get("username"),
         "key_id": auth.get("key_id"),

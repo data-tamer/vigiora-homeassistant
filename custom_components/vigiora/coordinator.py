@@ -37,6 +37,25 @@ from .const import (
     SSE_BACKOFF_MAX,
     STREAM_EVENT_SCOPES,
     STREAM_HEALTHY_WINDOW,
+    THINGS_EVENT_SCOPES,
+)
+from .vigiora_things import (
+    Catalog,
+    EventSubscription,
+    ServerInfo,
+    Thing,
+    ThingEvent,
+    ThingsApiError,
+    ThingsAuthError,
+    ThingsClient,
+    ThingsError,
+    apply_event,
+)
+from .vigiora_things.models import (
+    FEATURE_ALERTS_SUMMARY,
+    FEATURE_THINGS,
+    FEATURE_THINGS_EVENTS,
+    KIND_AREA,
 )
 
 if TYPE_CHECKING:
@@ -62,6 +81,8 @@ class VigioraData:
     visitors_today: dict[int, int] = field(default_factory=dict)
     unacknowledged_alerts: int | None = None
     unacknowledged_capped: bool = False
+    # Things model (API 1.18.0): every thing by id, with live state.
+    things: dict[str, Thing] = field(default_factory=dict)
 
 
 @dataclass
@@ -76,6 +97,17 @@ class Capabilities:
     rooms_readable: bool = False
     analytics_available: bool = False
     motion_available: bool = False
+    # GET /api/v1/server (None: a server older than API 1.17.0).
+    server: ServerInfo | None = None
+
+    def has(self, feature: str) -> bool:
+        """Whether the server has an optional feature (feature detection)."""
+        return self.server is not None and self.server.has(feature)
+
+    @property
+    def things_mode(self) -> bool:
+        """Entities and events come from the Things model."""
+        return self.has(FEATURE_THINGS) and self.has(FEATURE_THINGS_EVENTS)
 
     def can(self, scope: str) -> bool:
         """Whether the key has the scope."""
@@ -111,6 +143,8 @@ class VigioraCoordinator(DataUpdateCoordinator[VigioraData]):
         self.caps = caps
         self.person_seen: dict[int, datetime] = {}
         self.events: VigioraEventStream | None = None
+        self.things_client: ThingsClient | None = None
+        self.catalog: Catalog | None = None
 
     @property
     def selected_camera_ids(self) -> set[int] | None:
@@ -138,7 +172,8 @@ class VigioraCoordinator(DataUpdateCoordinator[VigioraData]):
                 raise
             except VigioraError as err:
                 _LOGGER.debug("Analytics not available: %s", err)
-        if caps.can("alerts:read"):
+        if caps.can("alerts:read") and not caps.things_mode:
+            # Motion levels are polled only without motion events.
             try:
                 await self.client.get_motion_latest()
                 caps.motion_available = True
@@ -160,6 +195,9 @@ class VigioraCoordinator(DataUpdateCoordinator[VigioraData]):
                     if err.status not in (403, 404, 503):
                         raise
                     caps.status_readable = False
+            if caps.has(FEATURE_ALERTS_SUMMARY) and caps.can("alerts:read"):
+                summary = await client.get_alert_summary()
+                data.unacknowledged_alerts = summary.get("unacknowledged")
             if data.unacknowledged_alerts is None and caps.can("alerts:read"):
                 (
                     data.unacknowledged_alerts,
@@ -172,10 +210,14 @@ class VigioraCoordinator(DataUpdateCoordinator[VigioraData]):
                     if err.status not in (403, 404, 503):
                         raise
                     caps.rooms_readable = False
-            if caps.analytics_available:
+            if caps.things_mode and self.things_client is not None:
+                await self._update_things(data)
+            elif caps.analytics_available:
                 await self._update_analytics(data)
-        except VigioraAuthError as err:
-            raise ConfigEntryAuthFailed(err.message) from err
+        except (VigioraAuthError, ThingsAuthError) as err:
+            raise ConfigEntryAuthFailed(str(err)) from err
+        except ThingsError as err:
+            raise UpdateFailed(str(err)) from err
         except VigioraConnectionError as err:
             raise UpdateFailed(f"Cannot reach the Vigiora server: {err}") from err
         except VigioraError as err:
@@ -185,6 +227,55 @@ class VigioraCoordinator(DataUpdateCoordinator[VigioraData]):
         if self.events is not None and not self.events.healthy:
             await self.events.async_poll_fallback()
         return data
+
+    async def _update_things(self, data: VigioraData) -> None:
+        """Things (and the area figures the legacy sensors read) from GET /things."""
+        if self.things_client is None:
+            return
+        things = await self.things_client.things()
+        data.things = {t.id: t for t in things}
+        areas = [t for t in things if t.kind == KIND_AREA]
+        data.occupancy = None
+        if areas:
+            data.occupancy = {}
+            for t in areas:
+                area_id = t.object_id or 0
+                data.occupancy[area_id] = {
+                    "area_id": area_id,
+                    "name": t.name,
+                    "occupancy": t.state("occupancy", "count"),
+                    "capacity": t.state("occupancy", "capacity"),
+                    "free": t.state("occupancy", "free"),
+                }
+                visitors = t.state("counter", "in_today")
+                if isinstance(visitors, int):
+                    data.visitors_today[area_id] = visitors
+            self.caps.analytics_available = True
+
+    def thing(self, thing_id: str) -> Thing | None:
+        """A thing by id (things mode)."""
+        return self.data.things.get(thing_id) if self.data else None
+
+    @callback
+    def async_apply_thing_event(self, event: ThingEvent) -> None:
+        """Apply a pushed state change (motion, presence, online, recording)."""
+        if self.data is None:
+            return
+        if apply_event(self.data.things, event) is not None:
+            self.async_update_listeners()
+
+    async def async_run_command(
+        self, thing_id: str, command: str, params: dict[str, Any] | None = None
+    ) -> Any:
+        """Run a Things command, refusing confirm-class ones while HITL is on."""
+        if self.things_client is None:
+            raise ThingsError("the server has no Things model")
+        thing = self.thing(thing_id)
+        spec = self.catalog.command(command) if self.catalog else None
+        op_id = spec.operations.get(thing.kind) if spec and thing else None
+        if op_id:
+            await self.client.ensure_no_approval_needed(op_id)
+        return await self.things_client.command(thing_id, command, params)
 
     async def _update_analytics(self, data: VigioraData) -> None:
         try:
@@ -303,11 +394,15 @@ class VigioraEventStream:
         self._fallback_since: datetime = dt_util.utcnow()
         self._last_alert_id: int | None = None
         self._last_entry_id: int | None = None
+        self._subscription: EventSubscription | None = None
 
     @property
     def types(self) -> list[str]:
         """Event types to subscribe to (those the key may receive)."""
-        return [t for t, scope in STREAM_EVENT_SCOPES.items() if self.caps.can(scope)]
+        scopes = dict(STREAM_EVENT_SCOPES)
+        if self.caps.things_mode:
+            scopes.update(THINGS_EVENT_SCOPES)
+        return [t for t, scope in scopes.items() if self.caps.can(scope)]
 
     @property
     def healthy(self) -> bool:
@@ -322,13 +417,16 @@ class VigioraEventStream:
         if not self.caps.can("events:read"):
             self.disabled_reason = "missing events:read scope"
             return
+        run = self._run_things() if self.caps.things_mode else self._run()
         self._task = self.entry.async_create_background_task(
-            self.hass, self._run(), name=f"{DOMAIN} event stream"
+            self.hass, run, name=f"{DOMAIN} event stream"
         )
 
     async def stop(self) -> None:
         """Stop the background task."""
         self._stopped = True
+        if self._subscription is not None:
+            self._subscription.stop()
         if self._task is not None:
             self._task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
@@ -388,6 +486,47 @@ class VigioraEventStream:
                 await self._sleep_backoff(backoff)
                 backoff = min(backoff * 2, SSE_BACKOFF_MAX)
 
+    async def _run_things(self) -> None:
+        """The Things event stream (vigiora_things.EventSubscription)."""
+        client = self.coordinator.things_client
+        if client is None:
+            return
+
+        def connected(on: bool) -> None:
+            self.connected = on
+            if on:
+                self.last_activity = dt_util.utcnow()
+
+        sub = EventSubscription(
+            client,
+            self._on_thing_event,
+            types=self.types,
+            things_format=True,
+            on_connected=connected,
+            sleep=self._sleep_backoff,
+            backoff_initial=SSE_BACKOFF_INITIAL,
+            backoff_max=SSE_BACKOFF_MAX,
+        )
+        sub.last_event_id = self.last_event_id
+        self._subscription = sub
+        try:
+            await sub.run()
+        except ThingsAuthError:
+            self.connected = False
+            self.last_error = "unauthenticated"
+            self.entry.async_start_reauth(self.hass)
+        except ThingsApiError as err:
+            self.connected = False
+            self.last_error = err.code
+            self.disabled_reason = err.code
+            _LOGGER.warning("Vigiora event stream refused (%s); polling instead", err.code)
+
+    @callback
+    def _on_thing_event(self, event: ThingEvent) -> None:
+        """A Things event: state change, then the v1 handling (entities, refreshes)."""
+        self.coordinator.async_apply_thing_event(event)
+        self.handle_event(event.to_v1())
+
     async def _sleep_backoff(self, delay: float) -> None:
         self.reconnects += 1
         await asyncio.sleep(delay)
@@ -433,11 +572,18 @@ class VigioraEventStream:
             self.hass.async_create_task(self._handle_guardian(event))
 
     async def _handle_guardian(self, event: dict[str, Any]) -> None:
-        """Enrich a guardian.event with its entry (person presence) and fire it."""
+        """Fire a guardian.event; enrich it with its entry on old servers.
+
+        API 1.17.0 events carry person_present, detections and
+        detector_checked: no extra GET per entry.
+        """
         data = dict(event.get("data") or {})
         entry_id = data.get("entry_id")
         camera_id = event.get("camera_id")
-        if isinstance(entry_id, int) and self.caps.can("guardian:read"):
+        if "person_present" in data:
+            if isinstance(camera_id, int) and data.get("person_present") is True:
+                self.coordinator.async_person_seen(camera_id, _parse_time(data.get("observed_at")))
+        elif isinstance(entry_id, int) and self.caps.can("guardian:read"):
             try:
                 entry = await self.client.get_guardian_entry(entry_id)
             except VigioraError as err:
@@ -542,7 +688,9 @@ class VigioraEventStream:
             "healthy": self.healthy,
             "last_activity": self.last_activity.isoformat() if self.last_activity else None,
             "last_event_id": self.last_event_id,
-            "reconnects": self.reconnects,
+            "reconnects": self.reconnects
+            + (self._subscription.reconnects if self._subscription else 0),
+            "things_format": self.caps.things_mode,
             "last_error": self.last_error,
             "disabled_reason": self.disabled_reason,
             "types": self.types,

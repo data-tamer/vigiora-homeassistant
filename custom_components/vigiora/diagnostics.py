@@ -34,15 +34,26 @@ async def async_get_config_entry_diagnostics(
     coordinator = runtime.coordinator
     data = coordinator.data
     caps = coordinator.caps
+    server = asdict(runtime.server) if runtime.server else None
+    if server is not None:
+        server["features"] = sorted(server["features"])
+    caps_d = asdict(caps)
+    caps_d["server"] = server
+    data_d = asdict(data) if data else None
+    if data_d is not None:
+        data_d.pop("things", None)
     return {
         "entry": {
             "title": entry.title,
             "data": async_redact_data(dict(entry.data), TO_REDACT),
             "options": dict(entry.options),
         },
-        "capabilities": async_redact_data(asdict(caps), TO_REDACT),
+        "capabilities": async_redact_data(caps_d, TO_REDACT),
         "server_version": runtime.version,
+        "server": server,
+        "things_mode": caps.things_mode,
+        "things": sorted(data.things) if data else [],
         "event_stream": runtime.events.diagnostics(),
-        "data": async_redact_data(asdict(data), TO_REDACT) if data else None,
+        "data": async_redact_data(data_d, TO_REDACT) if data_d else None,
         "motion": runtime.motion.data if runtime.motion else None,
     }

@@ -51,6 +51,19 @@ STREAM_EVENT_SCOPES: Final = {
     "settings.changed": "settings:read",
 }
 
+# Added with the Things model (API 1.17.0+): pushed motion and presence.
+THINGS_EVENT_SCOPES: Final = {
+    "motion.started": "cameras:read",
+    "motion.ended": "cameras:read",
+    "presence.changed": "cameras:read",
+    "recording.started": "recordings:read",
+    "recording.stopped": "recordings:read",
+}
+
+# Live video links are refreshed this long before they expire.
+STREAM_URL_TTL: Final = 600
+STREAM_URL_REFRESH_MARGIN: Final = timedelta(seconds=90)
+
 SIGNAL_EVENT: Final = "vigiora_event_{}"
 
 SERVICE_SPEAK: Final = "speak"

@@ -151,13 +151,14 @@
   "services": {
     "speak": {
       "name": "Speak",
-      "description": "Says a text aloud through a speaker of a Vigiora room.",
+      "description": "Says a text aloud through a Vigiora camera's speaker or a room's speaker.",
       "fields": {
         "text": {"name": "Text", "description": "What to say (at most 1000 characters)."},
-        "camera": {"name": "Camera", "description": "Speak in the room this camera belongs to."},
+        "camera": {"name": "Camera", "description": "Speak through this camera's own speaker (API 1.17.0+), else in the room it belongs to."},
+        "camera_id": {"name": "Camera id", "description": "A Vigiora camera id: speaks through that camera's own speaker (API 1.17.0+), else in its room."},
         "output_id": {"name": "Speaker id", "description": "A Vigiora speaker (output) id; default the room's default speaker."},
         "room_id": {"name": "Room id", "description": "The Vigiora room to speak in."},
-        "volume": {"name": "Volume", "description": "0 to 2 (1 = unchanged)."},
+        "volume": {"name": "Volume", "description": "0 to 2 (1 = unchanged); a camera's own speaker plays at most 1."},
         "config_entry_id": {"name": "Server", "description": "The Vigiora server, when several are configured."}
       }
     },
