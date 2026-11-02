@@ -54,8 +54,8 @@ async def test_user_title_from_server_name(
     )
     result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Vigiora base01"
-    assert result["description_placeholders"] == {"name": "base01", "version": "1.7.0"}
+    assert result["title"] == "Vigiora shop01"
+    assert result["description_placeholders"] == {"name": "shop01", "version": "1.7.0"}
 
 
 async def test_user_bad_key(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) -> None:
@@ -200,6 +200,6 @@ async def test_options(
 
 def test_server_name() -> None:
     """Names from URLs."""
-    assert server_name("https://base01.vigiora.com") == "base01"
-    assert server_name("https://lan.base01.vigiora.com:8444") == "base01"
+    assert server_name("https://shop01.vigiora.com") == "shop01"
+    assert server_name("https://lan.shop01.vigiora.com:8444") == "shop01"
     assert server_name("http://192.168.1.10:8080") == "192.168.1.10"

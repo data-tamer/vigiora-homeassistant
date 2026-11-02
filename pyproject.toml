@@ -3,7 +3,7 @@ name = "vigiora-homeassistant"
 version = "0.2.1"
 description = "Vigiora integration for Home Assistant"
 requires-python = ">=3.13"
-license = "Apache-2.0"
+license = "MIT"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

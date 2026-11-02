@@ -149,7 +149,7 @@ async def test_feature_detection() -> None:
     )
     assert await c.server_info() is None  # an older server
     t.add("GET", "/api/v1/server", 200, SERVER)
-    assert (await c.server_info()).name == "base01"
+    assert (await c.server_info()).name == "shop01"
     t.add(
         "GET",
         "/api/v1/server",

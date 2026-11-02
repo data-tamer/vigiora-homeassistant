@@ -242,8 +242,8 @@ FEATURES = [
 ]
 SERVER = {
     "id": "5f1c0ffee5f1c0ffee5f1c0ffee5f1c0",
-    "name": "base01",
-    "site_address": "https://base01.vigiora.com",
+    "name": "shop01",
+    "site_address": "https://shop01.vigiora.com",
     "version": "1.7.0",
     "edition": "self_hosted",
     "install": "native",
@@ -324,7 +324,7 @@ THINGS = [
     {
         "id": "server",
         "kind": "server",
-        "name": "base01",
+        "name": "shop01",
         "parent_id": None,
         "site_id": None,
         "room_ids": [],

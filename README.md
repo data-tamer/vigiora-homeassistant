@@ -11,13 +11,12 @@ behaviour (feature detection via `GET /api/v1/server`). Live updates come from t
 (Server-Sent Events) with automatic reconnect and backoff; if the stream is down, it falls back to polling
 every 60 seconds.
 
-Status: 0.2.1, private preview.
+Status: 0.2.1, beta.
 
 ## Install (HACS custom repository)
 
 1. In Home Assistant open **HACS → ⋮ → Custom repositories**.
 2. Add `https://github.com/data-tamer/vigiora-homeassistant` with category **Integration**.
-   (While the repository is private, HACS needs a GitHub token with access to it.)
 3. Install **Vigiora**, then restart Home Assistant.
 4. **Settings → Devices & services → Add integration → Vigiora.** Enter:
    - **Server URL**: `https://<site>.vigiora.com`, or `http(s)://host:port` on your LAN;
@@ -141,4 +140,4 @@ CI (`.github/workflows/validate.yml`) runs hassfest, HACS validation and the tes
 
 ## Licence
 
-Apache-2.0. Copyright 2026 Data Tamer.
+MIT. Copyright 2026 Data Tamer.

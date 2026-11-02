@@ -57,9 +57,9 @@ async def test_things_entities(
     assert hass.states.get("binary_sensor.entrance_person_in_view").state == STATE_OFF
     assert hass.states.get("binary_sensor.entrance_online").state == STATE_ON
     assert hass.states.get("binary_sensor.garden_online").state == STATE_OFF
-    assert hass.states.get("sensor.vigiora_base01_unacknowledged_alerts").state == "746"
-    assert hass.states.get("sensor.vigiora_base01_shop_occupancy").state == "3"
-    assert hass.states.get("sensor.vigiora_base01_shop_visitors_today").state == "42"
+    assert hass.states.get("sensor.vigiora_shop01_unacknowledged_alerts").state == "746"
+    assert hass.states.get("sensor.vigiora_shop01_shop_occupancy").state == "3"
+    assert hass.states.get("sensor.vigiora_shop01_shop_visitors_today").state == "42"
     # Read-only key: no switches or selects.
     assert hass.states.get("switch.entrance_recording") is None
 
@@ -369,9 +369,9 @@ async def test_default_title_takes_server_name(
     add_api(aioclient_mock, things=True)
     assert config_entry.title == "Vigiora site"  # the default 0.1.0 gave this URL
     await _setup(hass, config_entry)
-    assert config_entry.title == "Vigiora base01"
+    assert config_entry.title == "Vigiora shop01"
     device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, config_entry.entry_id)})
-    assert device.name == "Vigiora base01"
+    assert device.name == "Vigiora shop01"
 
 
 def _entry(title: str) -> MockConfigEntry:
@@ -394,7 +394,7 @@ async def test_host_default_title_takes_server_name(
     add_api(aioclient_mock, things=True)
     entry = _entry("Vigiora site.vigiora.com")
     await _setup(hass, entry)
-    assert entry.title == "Vigiora base01"
+    assert entry.title == "Vigiora shop01"
 
 
 async def test_custom_title_is_kept(
