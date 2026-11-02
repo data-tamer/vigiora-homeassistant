@@ -1,0 +1,210 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mit einem Vigiora-Server verbinden",
+        "description": "Gib die Adresse deines Vigiora-Servers und einen in Vigiora erstellten API-Schlüssel ein (Einstellungen → API-Schlüssel).",
+        "data": {
+          "url": "Server-URL",
+          "api_key": "API-Schlüssel",
+          "verify_ssl": "TLS-Zertifikat überprüfen"
+        },
+        "data_description": {
+          "url": "Zum Beispiel https://mysite.vigiora.com oder http://192.168.1.10:8080",
+          "api_key": "Ein Schlüssel, der mit vgk_ beginnt. Schreibgeschützte Berechtigungen genügen für Kameras, Sensoren und Ereignisse.",
+          "verify_ssl": "Eingeschaltet lassen, außer der Server verwendet ein selbstsigniertes Zertifikat."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Vigiora-API-Schlüssel",
+        "description": "Der API-Schlüssel für {url} funktioniert nicht mehr (widerrufen oder abgelaufen). Gib einen neuen ein.",
+        "data": {
+          "api_key": "API-Schlüssel"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Der Vigiora-Server ist nicht erreichbar.",
+      "invalid_auth": "Der API-Schlüssel wurde abgelehnt.",
+      "invalid_url": "Gib eine http://- oder https://-Adresse mit einem Hostnamen ein.",
+      "missing_scope": "Der API-Schlüssel benötigt mindestens die Berechtigung cameras:read.",
+      "ssl_error": "Das TLS-Zertifikat des Servers konnte nicht überprüft werden. Schalte die Zertifikatsprüfung nur aus, wenn du diesem Server vertraust.",
+      "unknown": "Unerwarteter Fehler."
+    },
+    "abort": {
+      "already_configured": "Dieser Vigiora-Server ist bereits konfiguriert.",
+      "reauth_successful": "Der API-Schlüssel wurde aktualisiert."
+    },
+    "create_entry": {
+      "default": "Verbunden mit {name} (Vigiora {version})."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Vigiora-Optionen",
+        "data": {
+          "cameras": "Kameras (keine ausgewählt = alle)",
+          "event_types": "Ereignistypen",
+          "alerts_only": "Nur zu Alarmen hochgestufte Erkennungen"
+        },
+        "data_description": {
+          "alerts_only": "Aus: Jede Erkennung (Person, Auto, …) löst das Alarmereignis aus."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {"name": "Online"},
+      "person": {"name": "Person im Bild"},
+      "motion": {"name": "Bewegung"}
+    },
+    "camera": {
+      "camera": {"name": "Kamera"}
+    },
+    "event": {
+      "guardian": {
+        "name": "Guardian",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "alert": "Alarm",
+              "scene_description": "Szenenbeschreibung"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "ai_mode": {
+        "name": "KI-Modus",
+        "state": {
+          "live": "AI Live",
+          "guardian": "AI Guardian",
+          "both": "Beide"
+        }
+      }
+    },
+    "sensor": {
+      "unacknowledged_alerts": {"name": "Unbestätigte Alarme"},
+      "cameras_online": {"name": "Kameras online"},
+      "visitors_today": {"name": "Besucher heute"},
+      "area_occupancy": {"name": "Belegung {area}"},
+      "area_visitors_today": {"name": "Besucher heute {area}"}
+    },
+    "switch": {
+      "recording": {"name": "Aufnahme"},
+      "ai_guardian": {"name": "AI Guardian"}
+    }
+  },
+  "exceptions": {
+    "approval_required": {
+      "message": "Vigiora benötigt die Genehmigung einer Person für {operation} (Human in the Loop ist für diesen API-Schlüssel aktiv). Home Assistant genehmigt nie in deinem Namen: Tu es in der Vigiora-App oder bitte einen Administrator, Human in the Loop für diesen Schlüssel auszuschalten."
+    },
+    "unauthenticated": {
+      "message": "Der Vigiora-API-Schlüssel wurde abgelehnt."
+    },
+    "cannot_connect": {
+      "message": "Der Vigiora-Server ist nicht erreichbar ({error})."
+    },
+    "payment_required": {
+      "message": "Dein Vigiora-Tarif erlaubt das nicht ({code}): {message}"
+    },
+    "insufficient_scope": {
+      "message": "Dem Vigiora-API-Schlüssel fehlt die Berechtigung {scope}: {message}"
+    },
+    "forbidden": {
+      "message": "Vigiora hat den Vorgang abgelehnt ({code}): {message}"
+    },
+    "conflict": {
+      "message": "Vigiora kann das gerade nicht ausführen ({code}): {message}"
+    },
+    "rate_limited": {
+      "message": "Vigiora-Ratenlimit erreicht ({code}): {message}"
+    },
+    "not_found": {
+      "message": "Auf dem Vigiora-Server nicht gefunden: {message}"
+    },
+    "api_error": {
+      "message": "Vigiora-Fehler {status} ({code}): {message}"
+    },
+    "entry_not_found": {
+      "message": "Kein geladener Vigiora-Server mit der Eintrags-ID {entry_id}."
+    },
+    "entry_required": {
+      "message": "Mehrere Vigiora-Server sind konfiguriert: Gib config_entry_id oder eine Kamera an."
+    },
+    "not_a_camera": {
+      "message": "{entity_id} ist keine Vigiora-Kameraentität."
+    },
+    "camera_required": {
+      "message": "Gib eine Kamera (Entität) oder camera_id an."
+    },
+    "no_room_for_speaker": {
+      "message": "Für diese Kamera oder diesen Lautsprecher wurde kein Raum gefunden. Vigiora spricht über Räume: Gib room_id an oder füge die Kamera oder den Lautsprecher einem Raum hinzu."
+    },
+    "preset_not_found": {
+      "message": "Die PTZ-Voreinstellung {preset} wurde auf der Kamera nicht gefunden."
+    }
+  },
+  "services": {
+    "speak": {
+      "name": "Sprechen",
+      "description": "Sagt einen Text über einen Lautsprecher eines Vigiora-Raums laut an.",
+      "fields": {
+        "text": {"name": "Text", "description": "Was gesagt werden soll (höchstens 1000 Zeichen)."},
+        "camera": {"name": "Kamera", "description": "In dem Raum sprechen, zu dem diese Kamera gehört."},
+        "output_id": {"name": "Lautsprecher-ID", "description": "Die ID eines Vigiora-Lautsprechers (Ausgang); Standard ist der Standardlautsprecher des Raums."},
+        "room_id": {"name": "Raum-ID", "description": "Der Vigiora-Raum, in dem gesprochen werden soll."},
+        "volume": {"name": "Lautstärke", "description": "0 bis 2 (1 = unverändert)."},
+        "config_entry_id": {"name": "Server", "description": "Der Vigiora-Server, wenn mehrere konfiguriert sind."}
+      }
+    },
+    "ptz_goto_preset": {
+      "name": "Zu PTZ-Voreinstellung fahren",
+      "description": "Bewegt eine PTZ-Kamera zu einer gespeicherten Voreinstellung.",
+      "fields": {
+        "camera": {"name": "Kamera", "description": "Die Vigiora-Kamera."},
+        "preset": {"name": "Voreinstellung", "description": "Name oder Token der Voreinstellung."}
+      }
+    },
+    "ptz_move": {
+      "name": "PTZ bewegen",
+      "description": "Bewegt eine PTZ-Kamera kurz mit den angegebenen Geschwindigkeiten und hält dann an.",
+      "fields": {
+        "camera": {"name": "Kamera", "description": "Die Vigiora-Kamera."},
+        "pan": {"name": "Schwenken", "description": "-1 (links) bis 1 (rechts)."},
+        "tilt": {"name": "Neigen", "description": "-1 (unten) bis 1 (oben)."},
+        "zoom": {"name": "Zoom", "description": "-1 (heraus) bis 1 (hinein)."},
+        "duration_ms": {"name": "Dauer", "description": "Wie lange bewegt wird (höchstens 5000 ms)."}
+      }
+    },
+    "describe_camera": {
+      "name": "Kamera beschreiben",
+      "description": "Führt jetzt eine Guardian-Analyse der Kamera aus und liefert die Beschreibung der KI (verbraucht KI-Guthaben).",
+      "fields": {
+        "camera": {"name": "Kamera", "description": "Die Vigiora-Kamera."},
+        "include_objects": {"name": "Objekte einbeziehen", "description": "Zuerst die Objekterkennung ausführen und die gefundenen Objekte zurückgeben."},
+        "prompts": {"name": "Suchbegriffe", "description": "Wonach die Objekterkennung sucht (mit Objekte einbeziehen)."}
+      }
+    },
+    "detect_objects": {
+      "name": "Objekte erkennen",
+      "description": "Führt eine Objekterkennung mit offenem Vokabular auf dem Live-Bild aus und liefert die gefundenen Objekte.",
+      "fields": {
+        "camera": {"name": "Kamera", "description": "Die Vigiora-Kamera."},
+        "prompts": {"name": "Suchbegriffe", "description": "Wonach gesucht werden soll, in einfachen Worten (Standard ist die Liste der Kamera)."},
+        "min_confidence": {"name": "Mindestkonfidenz", "description": "0,01 bis 0,99 (Standard 0,25)."}
+      }
+    },
+    "acknowledge_alert": {
+      "name": "Alarm bestätigen",
+      "description": "Markiert einen Vigiora-Alarm als bestätigt.",
+      "fields": {
+        "alert_id": {"name": "Alarm-ID", "description": "Die ID des Alarms (das Attribut alert_id des Ereignisses)."},
+        "config_entry_id": {"name": "Server", "description": "Der Vigiora-Server, wenn mehrere konfiguriert sind."}
+      }
+    }
+  }
+}

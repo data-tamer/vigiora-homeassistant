@@ -1,0 +1,210 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ເຊື່ອມຕໍ່ກັບເຊີບເວີ Vigiora",
+        "description": "ປ້ອນທີ່ຢູ່ຂອງເຊີບເວີ Vigiora ແລະ ກຸນແຈ API ທີ່ສ້າງໃນ Vigiora (ການຕັ້ງຄ່າ → ກຸນແຈ API).",
+        "data": {
+          "url": "URL ຂອງເຊີບເວີ",
+          "api_key": "ກຸນແຈ API",
+          "verify_ssl": "ກວດສອບໃບຢັ້ງຢືນ TLS"
+        },
+        "data_description": {
+          "url": "ຕົວຢ່າງ https://mysite.vigiora.com ຫຼື http://192.168.1.10:8080",
+          "api_key": "ກຸນແຈທີ່ເລີ່ມຕົ້ນດ້ວຍ vgk_. ສິດອ່ານຢ່າງດຽວກໍພຽງພໍສຳລັບກ້ອງ, ເຊັນເຊີ ແລະ ເຫດການ.",
+          "verify_ssl": "ເປີດໄວ້ ເວັ້ນແຕ່ເຊີບເວີໃຊ້ໃບຢັ້ງຢືນທີ່ລົງນາມດ້ວຍຕົນເອງ."
+        }
+      },
+      "reauth_confirm": {
+        "title": "ກຸນແຈ API ຂອງ Vigiora",
+        "description": "ກຸນແຈ API ສຳລັບ {url} ໃຊ້ບໍ່ໄດ້ອີກຕໍ່ໄປ (ຖືກຖອນຄືນ ຫຼື ໝົດອາຍຸ). ກະລຸນາປ້ອນກຸນແຈໃໝ່.",
+        "data": {
+          "api_key": "ກຸນແຈ API"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "ບໍ່ສາມາດເຂົ້າເຖິງເຊີບເວີ Vigiora ໄດ້.",
+      "invalid_auth": "ກຸນແຈ API ຖືກປະຕິເສດ.",
+      "invalid_url": "ປ້ອນທີ່ຢູ່ http:// ຫຼື https:// ທີ່ມີຊື່ໂຮສ.",
+      "missing_scope": "ກຸນແຈ API ຕ້ອງມີສິດ cameras:read ຢ່າງໜ້ອຍ.",
+      "ssl_error": "ບໍ່ສາມາດກວດສອບໃບຢັ້ງຢືນ TLS ຂອງເຊີບເວີໄດ້. ປິດການກວດສອບໃບຢັ້ງຢືນສະເພາະເມື່ອທ່ານເຊື່ອຖືເຊີບເວີນີ້ເທົ່ານັ້ນ.",
+      "unknown": "ເກີດຂໍ້ຜິດພາດທີ່ບໍ່ຄາດຄິດ."
+    },
+    "abort": {
+      "already_configured": "ເຊີບເວີ Vigiora ນີ້ຖືກຕັ້ງຄ່າແລ້ວ.",
+      "reauth_successful": "ອັບເດດກຸນແຈ API ແລ້ວ."
+    },
+    "create_entry": {
+      "default": "ເຊື່ອມຕໍ່ກັບ {name} ແລ້ວ (Vigiora {version})."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ຕົວເລືອກຂອງ Vigiora",
+        "data": {
+          "cameras": "ກ້ອງ (ບໍ່ເລືອກ = ທັງໝົດ)",
+          "event_types": "ປະເພດເຫດການ",
+          "alerts_only": "ສະເພາະການກວດພົບທີ່ຍົກລະດັບເປັນການແຈ້ງເຕືອນ"
+        },
+        "data_description": {
+          "alerts_only": "ປິດ: ທຸກການກວດພົບ (ຄົນ, ລົດ, …) ຈະສົ່ງເຫດການແຈ້ງເຕືອນ."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {"name": "ອອນລາຍ"},
+      "person": {"name": "ພົບຄົນໃນພາບ"},
+      "motion": {"name": "ການເຄື່ອນໄຫວ"}
+    },
+    "camera": {
+      "camera": {"name": "ກ້ອງ"}
+    },
+    "event": {
+      "guardian": {
+        "name": "Guardian",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "alert": "ການແຈ້ງເຕືອນ",
+              "scene_description": "ຄຳອະທິບາຍສາກ"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "ai_mode": {
+        "name": "ໂໝດ AI",
+        "state": {
+          "live": "AI Live",
+          "guardian": "AI Guardian",
+          "both": "ທັງສອງ"
+        }
+      }
+    },
+    "sensor": {
+      "unacknowledged_alerts": {"name": "ການແຈ້ງເຕືອນທີ່ຍັງບໍ່ຮັບຮູ້"},
+      "cameras_online": {"name": "ກ້ອງທີ່ອອນລາຍ"},
+      "visitors_today": {"name": "ຜູ້ມາຢ້ຽມຢາມມື້ນີ້"},
+      "area_occupancy": {"name": "ຈຳນວນຄົນໃນ {area}"},
+      "area_visitors_today": {"name": "ຜູ້ມາຢ້ຽມຢາມ {area} ມື້ນີ້"}
+    },
+    "switch": {
+      "recording": {"name": "ການບັນທຶກ"},
+      "ai_guardian": {"name": "AI Guardian"}
+    }
+  },
+  "exceptions": {
+    "approval_required": {
+      "message": "Vigiora ຕ້ອງການການອະນຸມັດຈາກບຸກຄົນສຳລັບ {operation} (ເປີດໃຊ້ human in the loop ສຳລັບກຸນແຈ API ນີ້). Home Assistant ຈະບໍ່ອະນຸມັດແທນທ່ານ: ກະລຸນາອະນຸມັດໃນແອັບ Vigiora ຫຼື ຂໍໃຫ້ຜູ້ດູແລລະບົບປິດ human in the loop ສຳລັບກຸນແຈນີ້."
+    },
+    "unauthenticated": {
+      "message": "ກຸນແຈ API ຂອງ Vigiora ຖືກປະຕິເສດ."
+    },
+    "cannot_connect": {
+      "message": "ບໍ່ສາມາດເຂົ້າເຖິງເຊີບເວີ Vigiora ໄດ້ ({error})."
+    },
+    "payment_required": {
+      "message": "ແພັກເກດ Vigiora ຂອງທ່ານບໍ່ຮອງຮັບສິ່ງນີ້ ({code}): {message}"
+    },
+    "insufficient_scope": {
+      "message": "ກຸນແຈ API ຂອງ Vigiora ບໍ່ມີສິດ {scope}: {message}"
+    },
+    "forbidden": {
+      "message": "Vigiora ປະຕິເສດການດຳເນີນການ ({code}): {message}"
+    },
+    "conflict": {
+      "message": "Vigiora ບໍ່ສາມາດເຮັດສິ່ງນີ້ໄດ້ໃນຕອນນີ້ ({code}): {message}"
+    },
+    "rate_limited": {
+      "message": "ເຖິງຂີດຈຳກັດອັດຕາການເອີ້ນຂອງ Vigiora ແລ້ວ ({code}): {message}"
+    },
+    "not_found": {
+      "message": "ບໍ່ພົບໃນເຊີບເວີ Vigiora: {message}"
+    },
+    "api_error": {
+      "message": "ຂໍ້ຜິດພາດຂອງ Vigiora {status} ({code}): {message}"
+    },
+    "entry_not_found": {
+      "message": "ບໍ່ມີເຊີບເວີ Vigiora ທີ່ໂຫຼດໄວ້ທີ່ມີ entry id {entry_id}."
+    },
+    "entry_required": {
+      "message": "ມີການຕັ້ງຄ່າເຊີບເວີ Vigiora ຫຼາຍເຄື່ອງ: ກະລຸນາລະບຸ config_entry_id ຫຼື ກ້ອງ."
+    },
+    "not_a_camera": {
+      "message": "{entity_id} ບໍ່ແມ່ນເອັນຕິຕີກ້ອງຂອງ Vigiora."
+    },
+    "camera_required": {
+      "message": "ກະລຸນາລະບຸກ້ອງ (ເອັນຕິຕີ) ຫຼື camera_id."
+    },
+    "no_room_for_speaker": {
+      "message": "ບໍ່ພົບຫ້ອງສຳລັບກ້ອງ ຫຼື ລຳໂພງນີ້. Vigiora ເວົ້າຜ່ານຫ້ອງ: ກະລຸນາລະບຸ room_id ຫຼື ເພີ່ມກ້ອງ ຫຼື ລຳໂພງເຂົ້າໃນຫ້ອງ."
+    },
+    "preset_not_found": {
+      "message": "ບໍ່ພົບຄ່າທີ່ຕັ້ງໄວ້ລ່ວງໜ້າ PTZ {preset} ໃນກ້ອງ."
+    }
+  },
+  "services": {
+    "speak": {
+      "name": "ເວົ້າ",
+      "description": "ເວົ້າຂໍ້ຄວາມອອກສຽງຜ່ານລຳໂພງຂອງຫ້ອງ Vigiora.",
+      "fields": {
+        "text": {"name": "ຂໍ້ຄວາມ", "description": "ສິ່ງທີ່ຈະເວົ້າ (ບໍ່ເກີນ 1000 ຕົວອັກສອນ)."},
+        "camera": {"name": "ກ້ອງ", "description": "ເວົ້າໃນຫ້ອງທີ່ກ້ອງນີ້ຢູ່."},
+        "output_id": {"name": "ID ລຳໂພງ", "description": "ID ຂອງລຳໂພງ (ເອົາທ໌ພຸດ) ຂອງ Vigiora; ຄ່າເລີ່ມຕົ້ນແມ່ນລຳໂພງເລີ່ມຕົ້ນຂອງຫ້ອງ."},
+        "room_id": {"name": "ID ຫ້ອງ", "description": "ຫ້ອງ Vigiora ທີ່ຈະເວົ້າ."},
+        "volume": {"name": "ລະດັບສຽງ", "description": "0 ຫາ 2 (1 = ບໍ່ປ່ຽນ)."},
+        "config_entry_id": {"name": "ເຊີບເວີ", "description": "ເຊີບເວີ Vigiora ເມື່ອມີການຕັ້ງຄ່າຫຼາຍເຄື່ອງ."}
+      }
+    },
+    "ptz_goto_preset": {
+      "name": "ໄປຍັງພຣີເຊັດ PTZ",
+      "description": "ເລື່ອນກ້ອງ PTZ ໄປຍັງພຣີເຊັດທີ່ບັນທຶກໄວ້.",
+      "fields": {
+        "camera": {"name": "ກ້ອງ", "description": "ກ້ອງ Vigiora."},
+        "preset": {"name": "ພຣີເຊັດ", "description": "ຊື່ ຫຼື ໂທເຄັນຂອງພຣີເຊັດ."}
+      }
+    },
+    "ptz_move": {
+      "name": "ເລື່ອນ PTZ",
+      "description": "ເລື່ອນກ້ອງ PTZ ດ້ວຍຄວາມໄວທີ່ກຳນົດໃນເວລາສັ້ນໆ ແລ້ວຢຸດ.",
+      "fields": {
+        "camera": {"name": "ກ້ອງ", "description": "ກ້ອງ Vigiora."},
+        "pan": {"name": "ແພນ", "description": "-1 (ຊ້າຍ) ຫາ 1 (ຂວາ)."},
+        "tilt": {"name": "ອຽງ", "description": "-1 (ລົງ) ຫາ 1 (ຂຶ້ນ)."},
+        "zoom": {"name": "ຊູມ", "description": "-1 (ອອກ) ຫາ 1 (ເຂົ້າ)."},
+        "duration_ms": {"name": "ໄລຍະເວລາ", "description": "ເລື່ອນດົນເທົ່າໃດ (ບໍ່ເກີນ 5000 ms)."}
+      }
+    },
+    "describe_camera": {
+      "name": "ອະທິບາຍກ້ອງ",
+      "description": "ແລ່ນການວິເຄາະ Guardian ຂອງກ້ອງທັນທີ ແລະ ສົ່ງຄືນຄຳອະທິບາຍຈາກ AI (ໃຊ້ເຄຣດິດ AI).",
+      "fields": {
+        "camera": {"name": "ກ້ອງ", "description": "ກ້ອງ Vigiora."},
+        "include_objects": {"name": "ລວມວັດຖຸ", "description": "ແລ່ນການຈຳແນກວັດຖຸກ່ອນ ແລະ ສົ່ງຄືນວັດຖຸທີ່ພົບ."},
+        "prompts": {"name": "ພຣອມ", "description": "ສິ່ງທີ່ການຈຳແນກວັດຖຸຄົ້ນຫາ (ເມື່ອລວມວັດຖຸ)."}
+      }
+    },
+    "detect_objects": {
+      "name": "ກວດຫາວັດຖຸ",
+      "description": "ແລ່ນການຈຳແນກວັດຖຸແບບຄຳສັບເປີດໃນພາບສົດ ແລະ ສົ່ງຄືນວັດຖຸທີ່ພົບ.",
+      "fields": {
+        "camera": {"name": "ກ້ອງ", "description": "ກ້ອງ Vigiora."},
+        "prompts": {"name": "ພຣອມ", "description": "ສິ່ງທີ່ຕ້ອງການຄົ້ນຫາ ດ້ວຍຄຳເວົ້າທຳມະດາ (ຄ່າເລີ່ມຕົ້ນແມ່ນລາຍການຂອງກ້ອງ)."},
+        "min_confidence": {"name": "ຄວາມເຊື່ອໝັ້ນຂັ້ນຕ່ຳ", "description": "0.01 ຫາ 0.99 (ຄ່າເລີ່ມຕົ້ນ 0.25)."}
+      }
+    },
+    "acknowledge_alert": {
+      "name": "ຮັບຮູ້ການແຈ້ງເຕືອນ",
+      "description": "ໝາຍການແຈ້ງເຕືອນຂອງ Vigiora ວ່າຮັບຮູ້ແລ້ວ.",
+      "fields": {
+        "alert_id": {"name": "ID ການແຈ້ງເຕືອນ", "description": "ID ຂອງການແຈ້ງເຕືອນ (ແອັດທຣິບິວ alert_id ຂອງເຫດການ)."},
+        "config_entry_id": {"name": "ເຊີບເວີ", "description": "ເຊີບເວີ Vigiora ເມື່ອມີການຕັ້ງຄ່າຫຼາຍເຄື່ອງ."}
+      }
+    }
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ligar a um servidor Vigiora",
+        "description": "Introduza o endereço do seu servidor Vigiora e uma chave de API criada no Vigiora (Definições → Chaves de API).",
+        "data": {
+          "url": "URL do servidor",
+          "api_key": "Chave de API",
+          "verify_ssl": "Verificar o certificado TLS"
+        },
+        "data_description": {
+          "url": "Por exemplo https://mysite.vigiora.com ou http://192.168.1.10:8080",
+          "api_key": "Uma chave que começa por vgk_. As permissões só de leitura bastam para câmaras, sensores e eventos.",
+          "verify_ssl": "Deixe ativado, a menos que o servidor use um certificado autoassinado."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Chave de API do Vigiora",
+        "description": "A chave de API de {url} já não funciona (revogada ou expirada). Introduza uma nova.",
+        "data": {
+          "api_key": "Chave de API"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Não foi possível aceder ao servidor Vigiora.",
+      "invalid_auth": "A chave de API foi recusada.",
+      "invalid_url": "Introduza um endereço http:// ou https:// com um nome de anfitrião.",
+      "missing_scope": "A chave de API precisa, no mínimo, da permissão cameras:read.",
+      "ssl_error": "Não foi possível verificar o certificado TLS do servidor. Desative a verificação do certificado apenas se confiar neste servidor.",
+      "unknown": "Erro inesperado."
+    },
+    "abort": {
+      "already_configured": "Este servidor Vigiora já está configurado.",
+      "reauth_successful": "A chave de API foi atualizada."
+    },
+    "create_entry": {
+      "default": "Ligado a {name} (Vigiora {version})."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opções do Vigiora",
+        "data": {
+          "cameras": "Câmaras (nenhuma selecionada = todas)",
+          "event_types": "Tipos de evento",
+          "alerts_only": "Apenas deteções promovidas a alertas"
+        },
+        "data_description": {
+          "alerts_only": "Desativado: todas as deteções (pessoa, carro, …) disparam o evento de alerta."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {"name": "Online"},
+      "person": {"name": "Pessoa à vista"},
+      "motion": {"name": "Movimento"}
+    },
+    "camera": {
+      "camera": {"name": "Câmara"}
+    },
+    "event": {
+      "guardian": {
+        "name": "Guardian",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "alert": "Alerta",
+              "scene_description": "Descrição da cena"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "ai_mode": {
+        "name": "Modo de IA",
+        "state": {
+          "live": "AI Live",
+          "guardian": "AI Guardian",
+          "both": "Ambos"
+        }
+      }
+    },
+    "sensor": {
+      "unacknowledged_alerts": {"name": "Alertas por confirmar"},
+      "cameras_online": {"name": "Câmaras online"},
+      "visitors_today": {"name": "Visitantes hoje"},
+      "area_occupancy": {"name": "Ocupação de {area}"},
+      "area_visitors_today": {"name": "Visitantes hoje em {area}"}
+    },
+    "switch": {
+      "recording": {"name": "Gravação"},
+      "ai_guardian": {"name": "AI Guardian"}
+    }
+  },
+  "exceptions": {
+    "approval_required": {
+      "message": "O Vigiora requer a aprovação de uma pessoa para {operation} (a supervisão humana está ativada para esta chave de API). O Home Assistant nunca aprova em seu nome: faça-o na app Vigiora ou peça a um administrador que desative a supervisão humana para esta chave."
+    },
+    "unauthenticated": {
+      "message": "A chave de API do Vigiora foi recusada."
+    },
+    "cannot_connect": {
+      "message": "Não foi possível aceder ao servidor Vigiora ({error})."
+    },
+    "payment_required": {
+      "message": "O seu plano Vigiora não permite isto ({code}): {message}"
+    },
+    "insufficient_scope": {
+      "message": "A chave de API do Vigiora não tem a permissão {scope}: {message}"
+    },
+    "forbidden": {
+      "message": "O Vigiora recusou a operação ({code}): {message}"
+    },
+    "conflict": {
+      "message": "O Vigiora não pode fazer isto agora ({code}): {message}"
+    },
+    "rate_limited": {
+      "message": "Limite de pedidos do Vigiora atingido ({code}): {message}"
+    },
+    "not_found": {
+      "message": "Não encontrado no servidor Vigiora: {message}"
+    },
+    "api_error": {
+      "message": "Erro do Vigiora {status} ({code}): {message}"
+    },
+    "entry_not_found": {
+      "message": "Nenhum servidor Vigiora carregado com o id de entrada {entry_id}."
+    },
+    "entry_required": {
+      "message": "Existem vários servidores Vigiora configurados: indique config_entry_id ou uma câmara."
+    },
+    "not_a_camera": {
+      "message": "{entity_id} não é uma entidade de câmara do Vigiora."
+    },
+    "camera_required": {
+      "message": "Indique uma câmara (entidade) ou camera_id."
+    },
+    "no_room_for_speaker": {
+      "message": "Não foi encontrada nenhuma divisão para esta câmara ou altifalante. O Vigiora fala através de divisões: indique room_id ou adicione a câmara ou o altifalante a uma divisão."
+    },
+    "preset_not_found": {
+      "message": "A predefinição PTZ {preset} não foi encontrada na câmara."
+    }
+  },
+  "services": {
+    "speak": {
+      "name": "Falar",
+      "description": "Diz um texto em voz alta através de um altifalante de uma divisão do Vigiora.",
+      "fields": {
+        "text": {"name": "Texto", "description": "O que dizer (no máximo 1000 caracteres)."},
+        "camera": {"name": "Câmara", "description": "Falar na divisão a que esta câmara pertence."},
+        "output_id": {"name": "Id do altifalante", "description": "O id de um altifalante (saída) do Vigiora; por omissão, o altifalante predefinido da divisão."},
+        "room_id": {"name": "Id da divisão", "description": "A divisão do Vigiora onde falar."},
+        "volume": {"name": "Volume", "description": "De 0 a 2 (1 = sem alteração)."},
+        "config_entry_id": {"name": "Servidor", "description": "O servidor Vigiora, quando existem vários configurados."}
+      }
+    },
+    "ptz_goto_preset": {
+      "name": "Ir para predefinição PTZ",
+      "description": "Move uma câmara PTZ para uma predefinição guardada.",
+      "fields": {
+        "camera": {"name": "Câmara", "description": "A câmara Vigiora."},
+        "preset": {"name": "Predefinição", "description": "O nome ou token da predefinição."}
+      }
+    },
+    "ptz_move": {
+      "name": "Mover PTZ",
+      "description": "Move uma câmara PTZ às velocidades indicadas durante um curto período e depois para.",
+      "fields": {
+        "camera": {"name": "Câmara", "description": "A câmara Vigiora."},
+        "pan": {"name": "Panorâmica", "description": "De -1 (esquerda) a 1 (direita)."},
+        "tilt": {"name": "Inclinação", "description": "De -1 (baixo) a 1 (cima)."},
+        "zoom": {"name": "Zoom", "description": "De -1 (afastar) a 1 (aproximar)."},
+        "duration_ms": {"name": "Duração", "description": "Durante quanto tempo mover (no máximo 5000 ms)."}
+      }
+    },
+    "describe_camera": {
+      "name": "Descrever câmara",
+      "description": "Executa agora uma análise Guardian da câmara e devolve a descrição da IA (consome créditos de IA).",
+      "fields": {
+        "camera": {"name": "Câmara", "description": "A câmara Vigiora."},
+        "include_objects": {"name": "Incluir objetos", "description": "Executar primeiro o reconhecimento de objetos e devolver os objetos encontrados."},
+        "prompts": {"name": "Pedidos", "description": "O que o reconhecimento de objetos procura (com incluir objetos)."}
+      }
+    },
+    "detect_objects": {
+      "name": "Detetar objetos",
+      "description": "Executa reconhecimento de objetos de vocabulário aberto na imagem em direto e devolve os objetos encontrados.",
+      "fields": {
+        "camera": {"name": "Câmara", "description": "A câmara Vigiora."},
+        "prompts": {"name": "Pedidos", "description": "O que procurar, em palavras simples (por omissão, a lista da câmara)."},
+        "min_confidence": {"name": "Confiança mínima", "description": "De 0,01 a 0,99 (por omissão 0,25)."}
+      }
+    },
+    "acknowledge_alert": {
+      "name": "Confirmar alerta",
+      "description": "Marca um alerta do Vigiora como confirmado.",
+      "fields": {
+        "alert_id": {"name": "Id do alerta", "description": "O id do alerta (o atributo alert_id do evento)."},
+        "config_entry_id": {"name": "Servidor", "description": "O servidor Vigiora, quando existem vários configurados."}
+      }
+    }
+  }
+}

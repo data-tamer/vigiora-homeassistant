@@ -1,0 +1,210 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Vigiora サーバーに接続",
+        "description": "Vigiora サーバーのアドレスと、Vigiora で作成した API キーを入力してください（設定 → API キー）。",
+        "data": {
+          "url": "サーバー URL",
+          "api_key": "API キー",
+          "verify_ssl": "TLS 証明書を検証する"
+        },
+        "data_description": {
+          "url": "例: https://mysite.vigiora.com または http://192.168.1.10:8080",
+          "api_key": "vgk_ で始まるキーです。カメラ、センサー、イベントには読み取り専用のスコープで十分です。",
+          "verify_ssl": "サーバーが自己署名証明書を使用している場合を除き、オンのままにしてください。"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Vigiora API キー",
+        "description": "{url} の API キーは使用できなくなりました（失効または期限切れ）。新しいキーを入力してください。",
+        "data": {
+          "api_key": "API キー"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Vigiora サーバーに接続できません。",
+      "invalid_auth": "API キーが拒否されました。",
+      "invalid_url": "ホスト名を含む http:// または https:// のアドレスを入力してください。",
+      "missing_scope": "API キーには少なくとも cameras:read スコープが必要です。",
+      "ssl_error": "サーバーの TLS 証明書を検証できませんでした。このサーバーを信頼できる場合にのみ、証明書の検証をオフにしてください。",
+      "unknown": "予期しないエラーが発生しました。"
+    },
+    "abort": {
+      "already_configured": "この Vigiora サーバーはすでに設定されています。",
+      "reauth_successful": "API キーを更新しました。"
+    },
+    "create_entry": {
+      "default": "{name} に接続しました（Vigiora {version}）。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Vigiora のオプション",
+        "data": {
+          "cameras": "カメラ（未選択 = すべて）",
+          "event_types": "イベントの種類",
+          "alerts_only": "アラートに昇格した検知のみ"
+        },
+        "data_description": {
+          "alerts_only": "オフ: すべての検知（人物、車など）がアラートイベントを発生させます。"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {"name": "オンライン"},
+      "person": {"name": "人物を検知"},
+      "motion": {"name": "動き"}
+    },
+    "camera": {
+      "camera": {"name": "カメラ"}
+    },
+    "event": {
+      "guardian": {
+        "name": "Guardian",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "alert": "アラート",
+              "scene_description": "シーンの説明"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "ai_mode": {
+        "name": "AI モード",
+        "state": {
+          "live": "AI Live",
+          "guardian": "AI Guardian",
+          "both": "両方"
+        }
+      }
+    },
+    "sensor": {
+      "unacknowledged_alerts": {"name": "未確認のアラート"},
+      "cameras_online": {"name": "オンラインのカメラ"},
+      "visitors_today": {"name": "本日の来訪者"},
+      "area_occupancy": {"name": "{area} の在室状況"},
+      "area_visitors_today": {"name": "{area} の本日の来訪者"}
+    },
+    "switch": {
+      "recording": {"name": "録画"},
+      "ai_guardian": {"name": "AI Guardian"}
+    }
+  },
+  "exceptions": {
+    "approval_required": {
+      "message": "Vigiora では {operation} に人の承認が必要です（この API キーでは Human in the Loop がオンです）。Home Assistant があなたに代わって承認することはありません。Vigiora アプリで承認するか、管理者にこのキーの Human in the Loop をオフにするよう依頼してください。"
+    },
+    "unauthenticated": {
+      "message": "Vigiora の API キーが拒否されました。"
+    },
+    "cannot_connect": {
+      "message": "Vigiora サーバーに接続できません（{error}）。"
+    },
+    "payment_required": {
+      "message": "お使いの Vigiora プランではこの操作はできません（{code}）: {message}"
+    },
+    "insufficient_scope": {
+      "message": "Vigiora の API キーに {scope} スコープがありません: {message}"
+    },
+    "forbidden": {
+      "message": "Vigiora が操作を拒否しました（{code}）: {message}"
+    },
+    "conflict": {
+      "message": "Vigiora は現在この操作を実行できません（{code}）: {message}"
+    },
+    "rate_limited": {
+      "message": "Vigiora のレート制限に達しました（{code}）: {message}"
+    },
+    "not_found": {
+      "message": "Vigiora サーバー上に見つかりません: {message}"
+    },
+    "api_error": {
+      "message": "Vigiora エラー {status}（{code}）: {message}"
+    },
+    "entry_not_found": {
+      "message": "エントリー ID {entry_id} の読み込み済み Vigiora サーバーはありません。"
+    },
+    "entry_required": {
+      "message": "複数の Vigiora サーバーが設定されています。config_entry_id またはカメラを指定してください。"
+    },
+    "not_a_camera": {
+      "message": "{entity_id} は Vigiora のカメラエンティティではありません。"
+    },
+    "camera_required": {
+      "message": "カメラ（エンティティ）または camera_id を指定してください。"
+    },
+    "no_room_for_speaker": {
+      "message": "このカメラまたはスピーカーに対応する部屋が見つかりません。Vigiora は部屋を通じて音声を出力します。room_id を指定するか、カメラまたはスピーカーを部屋に追加してください。"
+    },
+    "preset_not_found": {
+      "message": "PTZ プリセット {preset} がカメラに見つかりません。"
+    }
+  },
+  "services": {
+    "speak": {
+      "name": "読み上げ",
+      "description": "Vigiora の部屋のスピーカーからテキストを音声で読み上げます。",
+      "fields": {
+        "text": {"name": "テキスト", "description": "読み上げる内容（最大 1000 文字）。"},
+        "camera": {"name": "カメラ", "description": "このカメラが属する部屋で読み上げます。"},
+        "output_id": {"name": "スピーカー ID", "description": "Vigiora のスピーカー（出力）の ID。省略すると部屋の既定のスピーカーを使います。"},
+        "room_id": {"name": "部屋 ID", "description": "読み上げる Vigiora の部屋。"},
+        "volume": {"name": "音量", "description": "0 から 2（1 = 変更なし）。"},
+        "config_entry_id": {"name": "サーバー", "description": "複数設定されている場合の Vigiora サーバー。"}
+      }
+    },
+    "ptz_goto_preset": {
+      "name": "PTZ プリセットへ移動",
+      "description": "PTZ カメラを保存済みのプリセットへ移動します。",
+      "fields": {
+        "camera": {"name": "カメラ", "description": "Vigiora のカメラ。"},
+        "preset": {"name": "プリセット", "description": "プリセットの名前またはトークン。"}
+      }
+    },
+    "ptz_move": {
+      "name": "PTZ を動かす",
+      "description": "指定した速度で PTZ カメラを短時間動かし、その後停止します。",
+      "fields": {
+        "camera": {"name": "カメラ", "description": "Vigiora のカメラ。"},
+        "pan": {"name": "パン", "description": "-1（左）から 1（右）。"},
+        "tilt": {"name": "チルト", "description": "-1（下）から 1（上）。"},
+        "zoom": {"name": "ズーム", "description": "-1（引く）から 1（寄る）。"},
+        "duration_ms": {"name": "継続時間", "description": "動かす時間（最大 5000 ms）。"}
+      }
+    },
+    "describe_camera": {
+      "name": "カメラを説明",
+      "description": "カメラの Guardian 分析を今すぐ実行し、AI による説明を返します（AI クレジットを消費します）。",
+      "fields": {
+        "camera": {"name": "カメラ", "description": "Vigiora のカメラ。"},
+        "include_objects": {"name": "オブジェクトを含める", "description": "先にオブジェクト認識を実行し、見つかったオブジェクトを返します。"},
+        "prompts": {"name": "プロンプト", "description": "オブジェクト認識で探すもの（オブジェクトを含める場合）。"}
+      }
+    },
+    "detect_objects": {
+      "name": "オブジェクトを検出",
+      "description": "ライブフレームに対してオープンボキャブラリのオブジェクト認識を実行し、見つかったオブジェクトを返します。",
+      "fields": {
+        "camera": {"name": "カメラ", "description": "Vigiora のカメラ。"},
+        "prompts": {"name": "プロンプト", "description": "探すものを平易な言葉で指定します（省略するとカメラのリストを使用）。"},
+        "min_confidence": {"name": "最小信頼度", "description": "0.01 から 0.99（既定は 0.25）。"}
+      }
+    },
+    "acknowledge_alert": {
+      "name": "アラートを確認済みにする",
+      "description": "Vigiora のアラートを確認済みにします。",
+      "fields": {
+        "alert_id": {"name": "アラート ID", "description": "アラートの ID（イベントの alert_id 属性）。"},
+        "config_entry_id": {"name": "サーバー", "description": "複数設定されている場合の Vigiora サーバー。"}
+      }
+    }
+  }
+}

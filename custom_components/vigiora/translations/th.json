@@ -1,0 +1,210 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "เชื่อมต่อกับเซิร์ฟเวอร์ Vigiora",
+        "description": "ป้อนที่อยู่ของเซิร์ฟเวอร์ Vigiora และคีย์ API ที่สร้างใน Vigiora (การตั้งค่า → คีย์ API)",
+        "data": {
+          "url": "URL ของเซิร์ฟเวอร์",
+          "api_key": "คีย์ API",
+          "verify_ssl": "ตรวจสอบใบรับรอง TLS"
+        },
+        "data_description": {
+          "url": "ตัวอย่างเช่น https://mysite.vigiora.com หรือ http://192.168.1.10:8080",
+          "api_key": "คีย์ที่ขึ้นต้นด้วย vgk_ สิทธิ์แบบอ่านอย่างเดียวก็เพียงพอสำหรับกล้อง เซนเซอร์ และเหตุการณ์",
+          "verify_ssl": "เปิดไว้ เว้นแต่เซิร์ฟเวอร์ใช้ใบรับรองที่ลงนามด้วยตนเอง"
+        }
+      },
+      "reauth_confirm": {
+        "title": "คีย์ API ของ Vigiora",
+        "description": "คีย์ API สำหรับ {url} ใช้งานไม่ได้อีกต่อไป (ถูกเพิกถอนหรือหมดอายุ) โปรดป้อนคีย์ใหม่",
+        "data": {
+          "api_key": "คีย์ API"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "ไม่สามารถเข้าถึงเซิร์ฟเวอร์ Vigiora ได้",
+      "invalid_auth": "คีย์ API ถูกปฏิเสธ",
+      "invalid_url": "ป้อนที่อยู่ http:// หรือ https:// ที่มีชื่อโฮสต์",
+      "missing_scope": "คีย์ API ต้องมีสิทธิ์ cameras:read เป็นอย่างน้อย",
+      "ssl_error": "ไม่สามารถตรวจสอบใบรับรอง TLS ของเซิร์ฟเวอร์ได้ ปิดการตรวจสอบใบรับรองเฉพาะเมื่อคุณเชื่อถือเซิร์ฟเวอร์นี้เท่านั้น",
+      "unknown": "เกิดข้อผิดพลาดที่ไม่คาดคิด"
+    },
+    "abort": {
+      "already_configured": "เซิร์ฟเวอร์ Vigiora นี้ได้รับการกำหนดค่าแล้ว",
+      "reauth_successful": "อัปเดตคีย์ API แล้ว"
+    },
+    "create_entry": {
+      "default": "เชื่อมต่อกับ {name} แล้ว (Vigiora {version})"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ตัวเลือกของ Vigiora",
+        "data": {
+          "cameras": "กล้อง (ไม่เลือก = ทั้งหมด)",
+          "event_types": "ประเภทเหตุการณ์",
+          "alerts_only": "เฉพาะการตรวจจับที่ยกระดับเป็นการแจ้งเตือน"
+        },
+        "data_description": {
+          "alerts_only": "ปิด: ทุกการตรวจจับ (คน รถ …) จะส่งเหตุการณ์แจ้งเตือน"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {"name": "ออนไลน์"},
+      "person": {"name": "พบคนในภาพ"},
+      "motion": {"name": "การเคลื่อนไหว"}
+    },
+    "camera": {
+      "camera": {"name": "กล้อง"}
+    },
+    "event": {
+      "guardian": {
+        "name": "Guardian",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "alert": "การแจ้งเตือน",
+              "scene_description": "คำอธิบายฉาก"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "ai_mode": {
+        "name": "โหมด AI",
+        "state": {
+          "live": "AI Live",
+          "guardian": "AI Guardian",
+          "both": "ทั้งสองอย่าง"
+        }
+      }
+    },
+    "sensor": {
+      "unacknowledged_alerts": {"name": "การแจ้งเตือนที่ยังไม่รับทราบ"},
+      "cameras_online": {"name": "กล้องที่ออนไลน์"},
+      "visitors_today": {"name": "ผู้มาเยือนวันนี้"},
+      "area_occupancy": {"name": "จำนวนคนใน {area}"},
+      "area_visitors_today": {"name": "ผู้มาเยือน {area} วันนี้"}
+    },
+    "switch": {
+      "recording": {"name": "การบันทึก"},
+      "ai_guardian": {"name": "AI Guardian"}
+    }
+  },
+  "exceptions": {
+    "approval_required": {
+      "message": "Vigiora ต้องการการอนุมัติจากบุคคลสำหรับ {operation} (เปิดใช้ human in the loop สำหรับคีย์ API นี้) Home Assistant จะไม่อนุมัติแทนคุณ โปรดอนุมัติในแอป Vigiora หรือขอให้ผู้ดูแลระบบปิด human in the loop สำหรับคีย์นี้"
+    },
+    "unauthenticated": {
+      "message": "คีย์ API ของ Vigiora ถูกปฏิเสธ"
+    },
+    "cannot_connect": {
+      "message": "ไม่สามารถเข้าถึงเซิร์ฟเวอร์ Vigiora ได้ ({error})"
+    },
+    "payment_required": {
+      "message": "แพ็กเกจ Vigiora ของคุณไม่รองรับสิ่งนี้ ({code}): {message}"
+    },
+    "insufficient_scope": {
+      "message": "คีย์ API ของ Vigiora ไม่มีสิทธิ์ {scope}: {message}"
+    },
+    "forbidden": {
+      "message": "Vigiora ปฏิเสธการดำเนินการ ({code}): {message}"
+    },
+    "conflict": {
+      "message": "Vigiora ไม่สามารถทำสิ่งนี้ได้ในขณะนี้ ({code}): {message}"
+    },
+    "rate_limited": {
+      "message": "ถึงขีดจำกัดอัตราการเรียกของ Vigiora แล้ว ({code}): {message}"
+    },
+    "not_found": {
+      "message": "ไม่พบบนเซิร์ฟเวอร์ Vigiora: {message}"
+    },
+    "api_error": {
+      "message": "ข้อผิดพลาดของ Vigiora {status} ({code}): {message}"
+    },
+    "entry_not_found": {
+      "message": "ไม่มีเซิร์ฟเวอร์ Vigiora ที่โหลดไว้ซึ่งมี entry id {entry_id}"
+    },
+    "entry_required": {
+      "message": "มีการกำหนดค่าเซิร์ฟเวอร์ Vigiora หลายเครื่อง: โปรดระบุ config_entry_id หรือกล้อง"
+    },
+    "not_a_camera": {
+      "message": "{entity_id} ไม่ใช่เอนทิตีกล้องของ Vigiora"
+    },
+    "camera_required": {
+      "message": "โปรดระบุกล้อง (เอนทิตี) หรือ camera_id"
+    },
+    "no_room_for_speaker": {
+      "message": "ไม่พบห้องสำหรับกล้องหรือลำโพงนี้ Vigiora พูดผ่านห้อง: โปรดระบุ room_id หรือเพิ่มกล้องหรือลำโพงลงในห้อง"
+    },
+    "preset_not_found": {
+      "message": "ไม่พบค่าที่ตั้งไว้ล่วงหน้า PTZ {preset} บนกล้อง"
+    }
+  },
+  "services": {
+    "speak": {
+      "name": "พูด",
+      "description": "พูดข้อความออกเสียงผ่านลำโพงของห้อง Vigiora",
+      "fields": {
+        "text": {"name": "ข้อความ", "description": "สิ่งที่จะพูด (ไม่เกิน 1000 ตัวอักษร)"},
+        "camera": {"name": "กล้อง", "description": "พูดในห้องที่กล้องนี้อยู่"},
+        "output_id": {"name": "ID ลำโพง", "description": "ID ของลำโพง (เอาต์พุต) ของ Vigiora ค่าเริ่มต้นคือลำโพงเริ่มต้นของห้อง"},
+        "room_id": {"name": "ID ห้อง", "description": "ห้อง Vigiora ที่จะพูด"},
+        "volume": {"name": "ระดับเสียง", "description": "0 ถึง 2 (1 = ไม่เปลี่ยน)"},
+        "config_entry_id": {"name": "เซิร์ฟเวอร์", "description": "เซิร์ฟเวอร์ Vigiora เมื่อมีการกำหนดค่าหลายเครื่อง"}
+      }
+    },
+    "ptz_goto_preset": {
+      "name": "ไปยังพรีเซ็ต PTZ",
+      "description": "เลื่อนกล้อง PTZ ไปยังพรีเซ็ตที่บันทึกไว้",
+      "fields": {
+        "camera": {"name": "กล้อง", "description": "กล้อง Vigiora"},
+        "preset": {"name": "พรีเซ็ต", "description": "ชื่อหรือโทเค็นของพรีเซ็ต"}
+      }
+    },
+    "ptz_move": {
+      "name": "เลื่อน PTZ",
+      "description": "เลื่อนกล้อง PTZ ด้วยความเร็วที่กำหนดในช่วงเวลาสั้น ๆ แล้วหยุด",
+      "fields": {
+        "camera": {"name": "กล้อง", "description": "กล้อง Vigiora"},
+        "pan": {"name": "แพน", "description": "-1 (ซ้าย) ถึง 1 (ขวา)"},
+        "tilt": {"name": "เอียง", "description": "-1 (ลง) ถึง 1 (ขึ้น)"},
+        "zoom": {"name": "ซูม", "description": "-1 (ออก) ถึง 1 (เข้า)"},
+        "duration_ms": {"name": "ระยะเวลา", "description": "เลื่อนนานเท่าใด (ไม่เกิน 5000 ms)"}
+      }
+    },
+    "describe_camera": {
+      "name": "อธิบายกล้อง",
+      "description": "รันการวิเคราะห์ Guardian ของกล้องทันทีและส่งคืนคำอธิบายจาก AI (ใช้เครดิต AI)",
+      "fields": {
+        "camera": {"name": "กล้อง", "description": "กล้อง Vigiora"},
+        "include_objects": {"name": "รวมวัตถุ", "description": "รันการจดจำวัตถุก่อนและส่งคืนวัตถุที่พบ"},
+        "prompts": {"name": "พรอมต์", "description": "สิ่งที่การจดจำวัตถุค้นหา (เมื่อรวมวัตถุ)"}
+      }
+    },
+    "detect_objects": {
+      "name": "ตรวจจับวัตถุ",
+      "description": "รันการจดจำวัตถุแบบคำศัพท์เปิดบนภาพสดและส่งคืนวัตถุที่พบ",
+      "fields": {
+        "camera": {"name": "กล้อง", "description": "กล้อง Vigiora"},
+        "prompts": {"name": "พรอมต์", "description": "สิ่งที่ต้องการค้นหา ด้วยคำพูดทั่วไป (ค่าเริ่มต้นคือรายการของกล้อง)"},
+        "min_confidence": {"name": "ความเชื่อมั่นขั้นต่ำ", "description": "0.01 ถึง 0.99 (ค่าเริ่มต้น 0.25)"}
+      }
+    },
+    "acknowledge_alert": {
+      "name": "รับทราบการแจ้งเตือน",
+      "description": "ทำเครื่องหมายการแจ้งเตือนของ Vigiora ว่ารับทราบแล้ว",
+      "fields": {
+        "alert_id": {"name": "ID การแจ้งเตือน", "description": "ID ของการแจ้งเตือน (แอตทริบิวต์ alert_id ของเหตุการณ์)"},
+        "config_entry_id": {"name": "เซิร์ฟเวอร์", "description": "เซิร์ฟเวอร์ Vigiora เมื่อมีการกำหนดค่าหลายเครื่อง"}
+      }
+    }
+  }
+}

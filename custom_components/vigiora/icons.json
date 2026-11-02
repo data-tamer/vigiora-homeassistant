@@ -1,0 +1,32 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "person": {"default": "mdi:account-off", "state": {"on": "mdi:account"}}
+    },
+    "event": {
+      "guardian": {"default": "mdi:shield-eye"}
+    },
+    "select": {
+      "ai_mode": {"default": "mdi:robot"}
+    },
+    "sensor": {
+      "unacknowledged_alerts": {"default": "mdi:bell-alert"},
+      "cameras_online": {"default": "mdi:cctv"},
+      "visitors_today": {"default": "mdi:account-group"},
+      "area_occupancy": {"default": "mdi:account-multiple"},
+      "area_visitors_today": {"default": "mdi:account-arrow-right"}
+    },
+    "switch": {
+      "recording": {"default": "mdi:record-rec"},
+      "ai_guardian": {"default": "mdi:shield-eye"}
+    }
+  },
+  "services": {
+    "speak": {"service": "mdi:bullhorn"},
+    "ptz_goto_preset": {"service": "mdi:camera-marker"},
+    "ptz_move": {"service": "mdi:pan"},
+    "describe_camera": {"service": "mdi:text-box-search"},
+    "detect_objects": {"service": "mdi:image-search"},
+    "acknowledge_alert": {"service": "mdi:bell-check"}
+  }
+}

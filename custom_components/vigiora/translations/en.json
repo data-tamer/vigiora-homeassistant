@@ -1,0 +1,210 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to a Vigiora server",
+        "description": "Enter the address of your Vigiora server and an API key created in Vigiora (Settings → API keys).",
+        "data": {
+          "url": "Server URL",
+          "api_key": "API key",
+          "verify_ssl": "Verify the TLS certificate"
+        },
+        "data_description": {
+          "url": "For example https://mysite.vigiora.com or http://192.168.1.10:8080",
+          "api_key": "A key starting with vgk_. Read-only scopes are enough for cameras, sensors and events.",
+          "verify_ssl": "Leave on unless the server uses a self-signed certificate."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Vigiora API key",
+        "description": "The API key for {url} no longer works (revoked or expired). Enter a new one.",
+        "data": {
+          "api_key": "API key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the Vigiora server.",
+      "invalid_auth": "The API key was refused.",
+      "invalid_url": "Enter an http:// or https:// address with a host name.",
+      "missing_scope": "The API key needs at least the cameras:read scope.",
+      "ssl_error": "The server's TLS certificate could not be verified. Turn off certificate verification only if you trust this server.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This Vigiora server is already configured.",
+      "reauth_successful": "The API key was updated."
+    },
+    "create_entry": {
+      "default": "Connected to {name} (Vigiora {version})."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Vigiora options",
+        "data": {
+          "cameras": "Cameras (none selected = all)",
+          "event_types": "Event types",
+          "alerts_only": "Only detections promoted to alerts"
+        },
+        "data_description": {
+          "alerts_only": "Off: every detection (person, car, …) fires the alert event."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {"name": "Online"},
+      "person": {"name": "Person in view"},
+      "motion": {"name": "Motion"}
+    },
+    "camera": {
+      "camera": {"name": "Camera"}
+    },
+    "event": {
+      "guardian": {
+        "name": "Guardian",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "alert": "Alert",
+              "scene_description": "Scene description"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "ai_mode": {
+        "name": "AI mode",
+        "state": {
+          "live": "AI Live",
+          "guardian": "AI Guardian",
+          "both": "Both"
+        }
+      }
+    },
+    "sensor": {
+      "unacknowledged_alerts": {"name": "Unacknowledged alerts"},
+      "cameras_online": {"name": "Cameras online"},
+      "visitors_today": {"name": "Visitors today"},
+      "area_occupancy": {"name": "{area} occupancy"},
+      "area_visitors_today": {"name": "{area} visitors today"}
+    },
+    "switch": {
+      "recording": {"name": "Recording"},
+      "ai_guardian": {"name": "AI Guardian"}
+    }
+  },
+  "exceptions": {
+    "approval_required": {
+      "message": "Vigiora requires a person's approval for {operation} (human in the loop is on for this API key). Home Assistant never approves on your behalf: do it in the Vigiora app, or ask an admin to turn human in the loop off for this key."
+    },
+    "unauthenticated": {
+      "message": "The Vigiora API key was refused."
+    },
+    "cannot_connect": {
+      "message": "Cannot reach the Vigiora server ({error})."
+    },
+    "payment_required": {
+      "message": "Your Vigiora plan does not allow this ({code}): {message}"
+    },
+    "insufficient_scope": {
+      "message": "The Vigiora API key lacks the {scope} scope: {message}"
+    },
+    "forbidden": {
+      "message": "Vigiora refused the operation ({code}): {message}"
+    },
+    "conflict": {
+      "message": "Vigiora cannot do this now ({code}): {message}"
+    },
+    "rate_limited": {
+      "message": "Vigiora rate limit reached ({code}): {message}"
+    },
+    "not_found": {
+      "message": "Not found on the Vigiora server: {message}"
+    },
+    "api_error": {
+      "message": "Vigiora error {status} ({code}): {message}"
+    },
+    "entry_not_found": {
+      "message": "No loaded Vigiora server with entry id {entry_id}."
+    },
+    "entry_required": {
+      "message": "Several Vigiora servers are configured: give config_entry_id or a camera."
+    },
+    "not_a_camera": {
+      "message": "{entity_id} is not a Vigiora camera entity."
+    },
+    "camera_required": {
+      "message": "Give a camera (entity) or camera_id."
+    },
+    "no_room_for_speaker": {
+      "message": "No room was found for this camera or speaker. Vigiora speaks through rooms: give room_id, or add the camera or speaker to a room."
+    },
+    "preset_not_found": {
+      "message": "PTZ preset {preset} was not found on the camera."
+    }
+  },
+  "services": {
+    "speak": {
+      "name": "Speak",
+      "description": "Says a text aloud through a speaker of a Vigiora room.",
+      "fields": {
+        "text": {"name": "Text", "description": "What to say (at most 1000 characters)."},
+        "camera": {"name": "Camera", "description": "Speak in the room this camera belongs to."},
+        "output_id": {"name": "Speaker id", "description": "A Vigiora speaker (output) id; default the room's default speaker."},
+        "room_id": {"name": "Room id", "description": "The Vigiora room to speak in."},
+        "volume": {"name": "Volume", "description": "0 to 2 (1 = unchanged)."},
+        "config_entry_id": {"name": "Server", "description": "The Vigiora server, when several are configured."}
+      }
+    },
+    "ptz_goto_preset": {
+      "name": "Go to PTZ preset",
+      "description": "Moves a PTZ camera to a stored preset.",
+      "fields": {
+        "camera": {"name": "Camera", "description": "The Vigiora camera."},
+        "preset": {"name": "Preset", "description": "The preset's name or token."}
+      }
+    },
+    "ptz_move": {
+      "name": "Move PTZ",
+      "description": "Moves a PTZ camera at the given speeds for a short time, then stops.",
+      "fields": {
+        "camera": {"name": "Camera", "description": "The Vigiora camera."},
+        "pan": {"name": "Pan", "description": "-1 (left) to 1 (right)."},
+        "tilt": {"name": "Tilt", "description": "-1 (down) to 1 (up)."},
+        "zoom": {"name": "Zoom", "description": "-1 (out) to 1 (in)."},
+        "duration_ms": {"name": "Duration", "description": "How long to move (at most 5000 ms)."}
+      }
+    },
+    "describe_camera": {
+      "name": "Describe camera",
+      "description": "Runs a Guardian analysis of the camera now and returns the AI's description (uses AI credits).",
+      "fields": {
+        "camera": {"name": "Camera", "description": "The Vigiora camera."},
+        "include_objects": {"name": "Include objects", "description": "Run object recognition first and return the objects found."},
+        "prompts": {"name": "Prompts", "description": "What object recognition looks for (with include objects)."}
+      }
+    },
+    "detect_objects": {
+      "name": "Detect objects",
+      "description": "Runs open-vocabulary object recognition on the live frame and returns the objects found.",
+      "fields": {
+        "camera": {"name": "Camera", "description": "The Vigiora camera."},
+        "prompts": {"name": "Prompts", "description": "What to look for, in plain words (default the camera's list)."},
+        "min_confidence": {"name": "Minimum confidence", "description": "0.01 to 0.99 (default 0.25)."}
+      }
+    },
+    "acknowledge_alert": {
+      "name": "Acknowledge alert",
+      "description": "Marks a Vigiora alert as acknowledged.",
+      "fields": {
+        "alert_id": {"name": "Alert id", "description": "The alert's id (the alert_id attribute of the event)."},
+        "config_entry_id": {"name": "Server", "description": "The Vigiora server, when several are configured."}
+      }
+    }
+  }
+}
